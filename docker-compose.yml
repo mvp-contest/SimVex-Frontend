@@ -1,0 +1,15 @@
+services:
+    frontend:
+        build:
+            context: .
+            dockerfile: Dockerfile
+            args:
+                NEXT_PUBLIC_APP_NAME: SimVex
+                NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+        container_name: simvex-frontend
+        ports:
+            - "${APP_PORT:-3000}:3000"
+        environment:
+            - NODE_ENV=production
+            - API_BASE_URL=${API_BASE_URL:-http://localhost:8000}
+        restart: unless-stopped
