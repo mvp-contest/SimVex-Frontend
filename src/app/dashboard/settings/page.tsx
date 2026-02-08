@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import { useAuth } from "@/app/context/AuthContext";
 import { profile as profileApi } from "@/lib/api";
 

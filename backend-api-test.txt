@@ -1,7 +1,0 @@
-﻿=== SIMVEX BACKEND API TEST RESULTS ===
-Base URL: http://simvex-backend.dokploy.byeolki.me
-
-Test Date: 2026-02-09 02:19:04
-
---- 1. Root Endpoint ---
-GET /

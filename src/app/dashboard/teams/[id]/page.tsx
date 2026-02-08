@@ -22,6 +22,7 @@ export default function TeamDetailPage() {
 
   useEffect(() => {
     loadTeam();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teamId]);
 
   const loadTeam = async () => {
