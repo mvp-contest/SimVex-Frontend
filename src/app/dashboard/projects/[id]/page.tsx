@@ -1,62 +1,87 @@
 "use client";
 
-import { useState } from "react";
-
-const MOCK_MODELS = Array.from({ length: 6 }, (_, i) => ({
-  id: i + 1,
-  name: "SV Renderer",
-  size: "7.2 MB",
-  selected: true,
-}));
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
+import Image from "next/image";
+import { projects as projectsApi, type Project } from "@/lib/api";
 
 export default function ProjectDetailPage() {
+  const params = useParams();
+  const projectId = params.id as string;
+  
   const [activeTab, setActiveTab] = useState<"3d" | "workflow">("3d");
   const [searchQuery, setSearchQuery] = useState("");
-  const [models, setModels] = useState(MOCK_MODELS);
+  const [project, setProject] = useState<Project | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const toggleModelSelection = (id: number) => {
-    setModels((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, selected: !m.selected } : m))
-    );
+  useEffect(() => {
+    loadProject();
+  }, [projectId]);
+
+  const loadProject = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const data = await projectsApi.get(projectId);
+      setProject(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load project");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const filteredModels = models.filter((m) =>
-    m.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <p className="text-slate-400">Loading project...</p>
+      </div>
+    );
+  }
+
+  if (error || !project) {
+    return (
+      <div className="p-4 bg-red-900/20 border border-red-500 rounded-md">
+        <p className="text-red-400">{error || "Project not found"}</p>
+      </div>
+    );
+  }
+
 
   return (
     <div>
       {/* Project Header */}
       <div className="flex items-center justify-between mb-3">
         <h2 className="font-semibold text-slate-200 text-xl leading-normal">
-          SV Renderer
+          {project.name}
         </h2>
         <button
           className="flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-semibold transition-opacity hover:opacity-90"
           style={{ backgroundColor: "var(--accent-blue)", color: "#e2e8f0" }}
         >
           Start
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path d="M4.5 3L8 6L4.5 9" stroke="#e2e8f0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <Image
+            src="/icons/action/play-arrow.svg"
+            alt="Start"
+            width={12}
+            height={12}
+          />
         </button>
       </div>
 
       {/* Owner Info */}
       <div className="flex items-center gap-2 mb-5">
-        <span className="font-medium text-slate-200 text-sm leading-normal">
-          Stupid Kang sang-woo
-        </span>
         <div className="flex items-center justify-center">
-          <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
-            <path
-              d="M7 9C8.66 9 10 7.66 10 6C10 4.34 8.66 3 7 3C5.34 3 4 4.34 4 6C4 7.66 5.34 9 7 9ZM7 11C4.67 11 0 12.17 0 14.5V17H14V14.5C14 12.17 9.33 11 7 11ZM13 9C14.66 9 16 7.66 16 6C16 4.34 14.66 3 13 3C12.71 3 12.43 3.03 12.16 3.1C12.69 3.89 13 4.89 13 6C13 7.11 12.69 8.11 12.16 8.9C12.43 8.97 12.71 9 13 9ZM14.04 11.13C15.22 12.06 16 13.27 16 14.5V17H20V14.5C20 12.46 16.5 11.35 14.04 11.13Z"
-              fill="#64748b"
-            />
-          </svg>
+          <Image
+            src="/icons/navigation/team.svg"
+            alt="Team"
+            width={16}
+            height={16}
+          />
         </div>
         <span className="font-medium text-slate-500 text-xs leading-normal">
-          +5 memvers
+          {project.members.length} member{project.members.length !== 1 ? 's' : ''}
         </span>
       </div>
 
@@ -99,7 +124,13 @@ export default function ProjectDetailPage() {
             className="font-medium text-slate-500 text-xs leading-normal bg-transparent w-full outline-none placeholder:text-slate-500"
             aria-label="Search models"
           />
-          <SearchIcon />
+          <Image
+            src="/icons/action/search.svg"
+            alt="Search"
+            width={14}
+            height={14}
+            className="flex-shrink-0"
+          />
         </div>
       </div>
 
@@ -109,133 +140,47 @@ export default function ProjectDetailPage() {
       {/* Stats Row */}
       <div className="flex items-center gap-4 mb-5">
         <p className="font-medium text-sm leading-normal">
-          <span className="text-slate-200">{filteredModels.length} </span>
+          <span className="text-slate-200">0 </span>
           <span className="text-[#787878]">models Uploaded</span>
         </p>
         <div className="w-px h-4 bg-[#787878]" />
         <p className="font-medium text-sm leading-normal">
-          <span className="text-slate-200">{filteredModels.length}</span>
+          <span className="text-slate-200">0</span>
           <span className="text-[#787878]"> Files Uploaded</span>
         </p>
         <span className="font-medium text-slate-500 text-sm leading-normal">
-          (48.3 MB)
+          (0 MB)
         </span>
       </div>
 
-      {/* Model Cards Grid */}
-      <div className="grid grid-cols-4 gap-x-5 gap-y-4 mb-6">
-        {filteredModels.map((model) => (
-          <article
-            key={model.id}
-            className="rounded-xl overflow-hidden cursor-pointer transition-opacity hover:opacity-90"
+      {/* Empty State or Model Cards Grid */}
+      {activeTab === "3d" ? (
+        <div className="flex flex-col items-center justify-center py-20">
+          <Image
+            src="/icons/brand/cube-preview.svg"
+            alt="No models"
+            width={80}
+            height={80}
+            className="opacity-50 mb-4"
+          />
+          <p className="text-slate-400 text-lg font-medium mb-2">No 3D Models Yet</p>
+          <p className="text-slate-500 text-sm mb-6">Upload your first 3D model to get started</p>
+          <button
+            className="px-6 py-3 rounded-md text-sm font-medium transition-opacity hover:opacity-90"
             style={{
-              backgroundColor: "#1e2127",
-              border: "1px solid #333b45",
+              backgroundColor: "var(--accent-blue)",
+              color: "#e2e8f0",
             }}
           >
-            {/* Thumbnail area */}
-            <div
-              className="relative h-[120px] flex items-center justify-center"
-              style={{
-                backgroundColor: "#12141b",
-                borderBottom: "1px solid #333b45",
-              }}
-            >
-              {/* Checkbox */}
-              <button
-                onClick={() => toggleModelSelection(model.id)}
-                className="absolute top-2 left-2 w-5 h-5 flex items-center justify-center"
-              >
-                <CheckboxIcon checked={model.selected} />
-              </button>
-
-              {/* 3D Model Preview */}
-              <CubeIcon />
-            </div>
-
-            {/* Info */}
-            <div className="px-4 pt-2 pb-2.5">
-              <h4 className="font-semibold text-slate-200 text-sm leading-normal">
-                {model.name}
-              </h4>
-              <span className="font-medium text-slate-500 text-xs leading-normal">
-                {model.size}
-              </span>
-            </div>
-          </article>
-        ))}
-      </div>
-
-      {/* Pagination */}
-      <div className="w-full h-px bg-[#333b45] mb-4" />
-      <div className="flex items-center justify-center gap-3">
-        <button className="flex items-center justify-center hover:opacity-70 transition-opacity" aria-label="Previous page">
-          <svg width="8" height="14" viewBox="0 0 8 14" fill="none">
-            <path d="M6 2L2 7L6 12" stroke="#e2e8f0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-
-        <div
-          className="w-8 h-8 rounded-lg flex items-center justify-center"
-          style={{ border: "1.5px solid #333b45" }}
-        >
-          <span className="font-medium text-slate-200 text-xs leading-normal">1</span>
+            Upload Model
+          </button>
         </div>
-
-        <span className="font-medium text-slate-200 text-xs leading-normal">
-          1-{filteredModels.length} of 1 Projects
-        </span>
-
-        <button className="flex items-center justify-center hover:opacity-70 transition-opacity" aria-label="Next page">
-          <svg width="8" height="14" viewBox="0 0 8 14" fill="none">
-            <path d="M2 2L6 7L2 12" stroke="#e2e8f0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-      </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-20">
+          <p className="text-slate-400 text-lg font-medium mb-2">Workflow Coming Soon</p>
+          <p className="text-slate-500 text-sm">This feature is under development</p>
+        </div>
+      )}
     </div>
-  );
-}
-
-function CheckboxIcon({ checked }: { checked: boolean }) {
-  if (!checked) {
-    return (
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-        <rect x="1" y="1" width="16" height="16" rx="3" stroke="#64748b" strokeWidth="1.5" fill="none" />
-      </svg>
-    );
-  }
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-      <rect width="18" height="18" rx="3" fill="#3b82f6" />
-      <path d="M4 9L7.5 12.5L14 6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function CubeIcon() {
-  return (
-    <svg
-      width="80"
-      height="80"
-      viewBox="0 0 80 80"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path d="M40 10L67 24V52L40 66L13 52V24L40 10Z" stroke="#4a5568" strokeWidth="1.2" fill="none" />
-      <path d="M40 10L67 24L40 38L13 24L40 10Z" stroke="#4a5568" strokeWidth="0.8" fill="none" />
-      <line x1="40" y1="38" x2="40" y2="66" stroke="#4a5568" strokeWidth="0.8" />
-      <text x="40" y="46" textAnchor="middle" fill="#64748b" fontSize="14" fontWeight="bold" fontFamily="Arial, Helvetica, sans-serif">
-        SV
-      </text>
-    </svg>
-  );
-}
-
-function SearchIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="flex-shrink-0">
-      <circle cx="7" cy="7" r="5.5" stroke="#64748b" strokeWidth="1.5" />
-      <path d="M11 11L14.5 14.5" stroke="#64748b" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
   );
 }
