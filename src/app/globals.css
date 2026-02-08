@@ -11,6 +11,10 @@
   --text-light: #E2E8F0;
   --button-bg: #F8FAFC;
   --button-text: #14171C;
+  --accent-blue: #3B82F6;
+  --header-bg: #0B0C0E;
+  --sidebar-bg: #14171C;
+  --sidebar-border: #1E2127;
 }
 
 @theme inline {
@@ -24,6 +28,10 @@
   --color-text-light: var(--text-light);
   --color-button-bg: var(--button-bg);
   --color-button-text: var(--button-text);
+  --color-accent-blue: var(--accent-blue);
+  --color-header-bg: var(--header-bg);
+  --color-sidebar-bg: var(--sidebar-bg);
+  --color-sidebar-border: var(--sidebar-border);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
