@@ -7,6 +7,13 @@ async function request<T>(
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
+  console.log("API Request:", {
+    url: `${API_BASE}${path}`,
+    method: options?.method || "GET",
+    body: options?.body,
+    hasToken: !!token
+  });
+
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {
@@ -17,8 +24,28 @@ async function request<T>(
   });
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.message || `API error ${res.status}`);
+    const contentType = res.headers.get("content-type");
+    let body: any = {};
+    
+    if (contentType?.includes("application/json")) {
+      body = await res.json().catch(() => ({}));
+    } else {
+      const text = await res.text().catch(() => "");
+      body = { rawError: text };
+    }
+    
+    console.error("API Error Details:", {
+      status: res.status,
+      statusText: res.statusText,
+      contentType,
+      body,
+      bodyString: JSON.stringify(body, null, 2),
+      url: `${API_BASE}${path}`,
+      requestBody: options?.body
+    });
+    
+    const errorMessage = body.message || body.error || body.rawError || `API error ${res.status}: ${res.statusText}`;
+    throw new Error(errorMessage);
   }
 
   const text = await res.text();
@@ -91,9 +118,13 @@ export interface TeamMember {
   user: {
     id: string;
     email: string;
-    nickname: string;
     personalId: string;
-    avatar?: string;
+    profile: {
+      id: string;
+      nickname: string;
+      aboutUs?: string;
+      avatar?: string;
+    };
   };
 }
 
@@ -108,10 +139,10 @@ export interface Team {
 export const teams = {
   list: (userId: string) => request<Team[]>(`/teams/user/${userId}`),
   get: (id: string) => request<Team>(`/teams/${id}`),
-  create: (name: string) =>
+  create: (name: string, creatorId: string) =>
     request<Team>("/teams", {
       method: "POST",
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, creatorId }),
     }),
   update: (id: string, name: string) =>
     request<Team>(`/teams/${id}`, {
@@ -120,6 +151,11 @@ export const teams = {
     }),
   remove: (id: string) =>
     request<void>(`/teams/${id}`, { method: "DELETE" }),
+  addMember: (teamId: string, userId: string, role: number) =>
+    request<void>(`/teams/${teamId}/members`, {
+      method: "POST",
+      body: JSON.stringify({ userId, role }),
+    }),
   updateMemberRole: (teamId: string, userId: string, role: number) =>
     request<void>(`/teams/${teamId}/members/${userId}`, {
       method: "PATCH",
@@ -138,7 +174,13 @@ export interface ProjectMember {
   user: {
     id: string;
     email: string;
-    nickname: string;
+    personalId: string;
+    profile: {
+      id: string;
+      nickname: string;
+      aboutUs?: string;
+      avatar?: string;
+    };
   };
 }
 
@@ -153,10 +195,10 @@ export const projects = {
   list: (userId: string) => request<Project[]>(`/projects/user/${userId}`),
   listByTeam: (teamId: string) => request<Project[]>(`/projects/team/${teamId}`),
   get: (id: string) => request<Project>(`/projects/${id}`),
-  create: (teamId: string, name: string) =>
+  create: (teamId: string, name: string, creatorId: string) =>
     request<Project>('/projects', {
       method: 'POST',
-      body: JSON.stringify({ teamId, name }),
+      body: JSON.stringify({ teamId, name, creatorId }),
     }),
   update: (id: string, name: string) =>
     request<Project>(`/projects/${id}`, {
@@ -165,6 +207,11 @@ export const projects = {
     }),
   remove: (id: string) =>
     request<void>(`/projects/${id}`, { method: 'DELETE' }),
+  addMember: (projectId: string, userId: string, role: number) =>
+    request<void>(`/projects/${projectId}/members`, {
+      method: 'POST',
+      body: JSON.stringify({ userId, role }),
+    }),
   updateMemberRole: (projectId: string, userId: string, role: number) =>
     request<void>(`/projects/${projectId}/members/${userId}`, {
       method: 'PATCH',
@@ -173,5 +220,93 @@ export const projects = {
   removeMember: (projectId: string, userId: string) =>
     request<void>(`/projects/${projectId}/members/${userId}`, {
       method: 'DELETE',
+    }),
+  updateLastAccessed: (id: string) =>
+    request<void>(`/projects/${id}/access`, {
+      method: 'PATCH',
+    }),
+};
+
+// ── Chats ──
+export interface ChatMessage {
+  id: string;
+  chatId: string;
+  userId: string;
+  content: string;
+  targetId?: string;
+  isDeleted: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Chat {
+  id: string;
+  teamId: string;
+  projectId?: string;
+  messages?: ChatMessage[];
+  createdAt: string;
+}
+
+export const chats = {
+  create: (teamId: string, projectId?: string) =>
+    request<Chat>('/chats', {
+      method: 'POST',
+      body: JSON.stringify({ teamId, projectId }),
+    }),
+  listByTeam: (teamId: string) => request<Chat[]>(`/chats/team/${teamId}`),
+  listByProject: (projectId: string) => request<Chat[]>(`/chats/project/${projectId}`),
+  get: (id: string) => request<Chat>(`/chats/${id}`),
+  remove: (id: string) => request<void>(`/chats/${id}`, { method: 'DELETE' }),
+  sendMessage: (chatId: string, userId: string, content: string, targetId?: string) =>
+    request<ChatMessage>(`/chats/${chatId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ userId, content, targetId }),
+    }),
+  getMessages: (chatId: string) => request<ChatMessage[]>(`/chats/${chatId}/messages`),
+  updateMessage: (messageId: string, content: string) =>
+    request<ChatMessage>(`/chats/messages/${messageId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ content }),
+    }),
+  deleteMessage: (messageId: string) =>
+    request<void>(`/chats/messages/${messageId}`, { method: 'DELETE' }),
+};
+
+// ── Memos ──
+export interface Memo {
+  id: string;
+  projectId: string;
+  content: string;
+  author: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const memos = {
+  create: (projectId: string, content: string, author: string) =>
+    request<Memo>('/memos', {
+      method: 'POST',
+      body: JSON.stringify({ projectId, content, author }),
+    }),
+  listByProject: (projectId: string) => request<Memo[]>(`/memos/project/${projectId}`),
+  get: (id: string) => request<Memo>(`/memos/${id}`),
+  update: (id: string, content: string) =>
+    request<Memo>(`/memos/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ content }),
+    }),
+  remove: (id: string) => request<void>(`/memos/${id}`, { method: 'DELETE' }),
+};
+
+// ── AI ──
+export interface AiResponse {
+  answer: string;
+}
+
+export const ai = {
+  ask: (question: string, context?: string) =>
+    request<AiResponse>('/ai/ask', {
+      method: 'POST',
+      body: JSON.stringify({ question, context }),
     }),
 };

@@ -5,10 +5,12 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { teams as teamsApi, projects as projectsApi, type Team, type Project } from "@/lib/api";
+import { useAuth } from "@/app/context/AuthContext";
 
 export default function TeamDetailPage() {
   const params = useParams();
   const teamId = params.id as string;
+  const { user } = useAuth();
   
   const [activeTab, setActiveTab] = useState<"members" | "projects" | "chat">("members");
   const [searchQuery, setSearchQuery] = useState("");
@@ -45,11 +47,11 @@ export default function TeamDetailPage() {
 
   const handleCreateProject = async () => {
     const name = prompt("Enter project name:");
-    if (!name) return;
+    if (!name || !user?.id) return;
 
     try {
       setIsCreatingProject(true);
-      await projectsApi.create(teamId, name);
+      await projectsApi.create(teamId, name, user.id);
       await loadTeam();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to create project");
@@ -135,7 +137,7 @@ export default function TeamDetailPage() {
 
   const filteredMembers = team.members.filter(
     (m) =>
-      m.user.nickname.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      m.user.profile.nickname.toLowerCase().includes(searchQuery.toLowerCase()) ||
       m.user.email.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
@@ -256,19 +258,19 @@ export default function TeamDetailPage() {
                   {/* Avatar */}
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium"
-                    style={{ backgroundColor: member.user.avatar ? 'transparent' : '#333b45', color: '#94a3b8' }}
+                    style={{ backgroundColor: member.user.profile.avatar ? 'transparent' : '#333b45', color: '#94a3b8' }}
                   >
-                    {member.user.avatar ? (
-                      <Image src={member.user.avatar} alt={member.user.nickname} width={32} height={32} className="rounded-full" />
+                    {member.user.profile.avatar ? (
+                      <Image src={member.user.profile.avatar} alt={member.user.profile.nickname} width={32} height={32} className="rounded-full" />
                     ) : (
-                      member.user.nickname.charAt(0).toUpperCase()
+                      member.user.profile.nickname.charAt(0).toUpperCase()
                     )}
                   </div>
 
                   {/* Name + Email */}
                   <div>
                     <p className="font-medium text-slate-200 text-sm leading-normal">
-                      {member.user.nickname}
+                      {member.user.profile.nickname}
                     </p>
                     <p className="font-medium text-slate-500 text-xs leading-normal">
                       {member.user.email}

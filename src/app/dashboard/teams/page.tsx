@@ -17,6 +17,8 @@ export default function TeamsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newTeamName, setNewTeamName] = useState("");
 
   useEffect(() => {
     if (user?.id) {
@@ -41,16 +43,31 @@ export default function TeamsPage() {
     }
   };
 
-  const handleCreateTeam = async () => {
-    const name = prompt("Enter team name:");
-    if (!name) return;
+  const handleCreateTeam = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTeamName.trim() || !user?.id) return;
 
     try {
       setIsCreating(true);
-      await teamsApi.create(name);
+      console.log("Creating team with name:", newTeamName);
+      const result = await teamsApi.create(newTeamName, user.id);
+      console.log("Team created successfully:", result);
+      setNewTeamName("");
+      setShowCreateForm(false);
       await loadTeams();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to create team");
+    } catch (err: any) {
+      console.error("Team creation error:", err);
+      console.error("Error details:", JSON.stringify(err, null, 2));
+      
+      let userMessage = "Failed to create team. ";
+      if (err.message?.includes("500") || err.message?.includes("Internal server error")) {
+        userMessage += "The server encountered an error. Please try again later or contact support.";
+      } else {
+        userMessage += err.message || "Unknown error occurred.";
+      }
+      
+      setError(userMessage);
+      alert(userMessage);
     } finally {
       setIsCreating(false);
     }
@@ -183,18 +200,18 @@ export default function TeamsPage() {
                     key={member.id}
                     className="w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-medium"
                     style={{
-                      backgroundColor: member.user.avatar ? 'transparent' : '#333b45',
+                      backgroundColor: member.user.profile.avatar ? 'transparent' : '#333b45',
                       borderColor: "#1e2127",
                       marginLeft: idx === 0 ? 0 : -8,
                       zIndex: 5 - idx,
                       color: '#94a3b8'
                     }}
-                    title={member.user.nickname}
+                    title={member.user.profile.nickname}
                   >
-                    {member.user.avatar ? (
-                      <Image src={member.user.avatar} alt={member.user.nickname} width={24} height={24} className="rounded-full" />
+                    {member.user.profile.avatar ? (
+                      <Image src={member.user.profile.avatar} alt={member.user.profile.nickname} width={24} height={24} className="rounded-full" />
                     ) : (
-                      member.user.nickname.charAt(0).toUpperCase()
+                      member.user.profile.nickname.charAt(0).toUpperCase()
                     )}
                   </div>
                 ))}
@@ -221,25 +238,64 @@ export default function TeamsPage() {
         ))}
 
         {/* Create New Team Card */}
-        <button
-          onClick={handleCreateTeam}
-          disabled={isCreating}
-          className="rounded-xl flex flex-col items-center justify-center gap-4 min-h-[300px] cursor-pointer transition-opacity hover:opacity-80 disabled:opacity-50"
-          style={{
-            border: "2px dashed #333b45",
-            backgroundColor: "transparent",
-          }}
-        >
-          <Image
-            src="/icons/action/plus.svg"
-            alt="Create"
-            width={40}
-            height={40}
-          />
-          <span className="font-medium text-slate-200 text-sm">
-            {isCreating ? "Creating..." : "Create New Team"}
-          </span>
-        </button>
+        {showCreateForm ? (
+          <form
+            onSubmit={handleCreateTeam}
+            className="rounded-xl flex flex-col items-center justify-center gap-4 min-h-[300px] p-6"
+            style={{
+              border: "2px dashed #333b45",
+              backgroundColor: "#1e2127",
+            }}
+          >
+            <h3 className="font-semibold text-slate-200 text-base">Create New Team</h3>
+            <input
+              type="text"
+              value={newTeamName}
+              onChange={(e) => setNewTeamName(e.target.value)}
+              placeholder="Team name"
+              autoFocus
+              className="w-full px-4 py-2 rounded-md bg-[#12141b] border border-[#333b45] text-slate-200 text-sm outline-none placeholder:text-slate-500"
+            />
+            <div className="flex gap-2 w-full">
+              <button
+                type="submit"
+                disabled={isCreating || !newTeamName.trim()}
+                className="flex-1 px-4 py-2 rounded-md bg-[#4a9eff] text-white text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                {isCreating ? "Creating..." : "Create"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCreateForm(false);
+                  setNewTeamName("");
+                }}
+                className="flex-1 px-4 py-2 rounded-md bg-[#333b45] text-slate-300 text-sm font-medium hover:opacity-90 transition-opacity"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        ) : (
+          <button
+            onClick={() => setShowCreateForm(true)}
+            className="rounded-xl flex flex-col items-center justify-center gap-4 min-h-[300px] cursor-pointer transition-opacity hover:opacity-80"
+            style={{
+              border: "2px dashed #333b45",
+              backgroundColor: "transparent",
+            }}
+          >
+            <Image
+              src="/icons/action/plus.svg"
+              alt="Create"
+              width={40}
+              height={40}
+            />
+            <span className="font-medium text-slate-200 text-sm">
+              Create New Team
+            </span>
+          </button>
+        )}
       </div>
 
       {/* Pagination */}
