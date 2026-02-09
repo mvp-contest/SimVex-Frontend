@@ -1,10 +1,45 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
+import { auth } from "@/lib/api";
+import { useAuth } from "@/app/context/AuthContext";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      const res = await auth.login({ email, password });
+      
+      const userData = {
+        id: res.id,
+        email: res.email,
+        nickname: res.profile.nickname,
+        personalId: res.personalId,
+      };
+      
+      const token = `user-${res.id}`;
+      login(token, userData);
+      router.push("/dashboard/teams");
+    } catch (err) {
+      console.error("Login error:", err);
+      setError(err instanceof Error ? err.message : "Login failed");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
@@ -19,15 +54,27 @@ export default function LoginPage() {
           Welcome Back
         </h1>
 
-        <form className="space-y-5">
+        <form className="space-y-5" onSubmit={handleSubmit}>
+          {error && (
+            <p className="text-red-400 text-sm text-center">{error}</p>
+          )}
+
           {/* Email Address */}
           <div className="relative">
             <div className="absolute left-4 top-1/2 -translate-y-1/2">
-              <EmailIcon />
+              <Image
+                src="/icons/auth/email.svg"
+                alt="Email"
+                width={20}
+                height={16}
+              />
             </div>
             <input
               type="email"
               placeholder="Email Address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
               className="w-full h-[58px] rounded-md pl-12 pr-4 text-[15px] outline-none"
               style={{
                 backgroundColor: "var(--input-bg)",
@@ -40,11 +87,19 @@ export default function LoginPage() {
           {/* Password */}
           <div className="relative">
             <div className="absolute left-4 top-1/2 -translate-y-1/2">
-              <LockIcon />
+              <Image
+                src="/icons/auth/lock.svg"
+                alt="Lock"
+                width={18}
+                height={20}
+              />
             </div>
             <input
               type={showPassword ? "text" : "password"}
               placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
               className="w-full h-[58px] rounded-md pl-12 pr-12 text-[15px] outline-none"
               style={{
                 backgroundColor: "var(--input-bg)",
@@ -57,7 +112,12 @@ export default function LoginPage() {
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-4 top-1/2 -translate-y-1/2"
             >
-              <EyeOffIcon />
+              <Image
+                src="/icons/auth/eye-off.svg"
+                alt="Toggle password"
+                width={20}
+                height={16}
+              />
             </button>
           </div>
 
@@ -65,21 +125,29 @@ export default function LoginPage() {
           <div className="pt-4">
             <button
               type="submit"
-              className="w-full h-[64px] rounded-md text-[18px] font-medium transition-opacity hover:opacity-90"
+              disabled={loading}
+              className="w-full h-[64px] rounded-md text-[18px] font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
               style={{
                 backgroundColor: "var(--button-bg)",
                 color: "var(--button-text)",
               }}
             >
-              Log In
+              {loading ? "Logging in..." : "Log In"}
             </button>
           </div>
 
           {/* Sign Up Link */}
           <div className="text-center pt-6">
-            <span style={{ color: "var(--text-light)" }} className="text-[14px]">
+            <span
+              style={{ color: "var(--text-light)" }}
+              className="text-[14px]"
+            >
               Don&apos;t have an account?{" "}
-              <Link href="/register" style={{ color: "var(--text-light)" }} className="underline">
+              <Link
+                href="/register"
+                style={{ color: "var(--text-light)" }}
+                className="underline"
+              >
                 Sign Up
               </Link>
             </span>
@@ -87,68 +155,5 @@ export default function LoginPage() {
         </form>
       </div>
     </div>
-  );
-}
-
-function EmailIcon() {
-  return (
-    <svg
-      width="20"
-      height="16"
-      viewBox="0 0 20 16"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M18 0H2C0.9 0 0 0.9 0 2V14C0 15.1 0.9 16 2 16H18C19.1 16 20 15.1 20 14V2C20 0.9 19.1 0 18 0ZM18 4L10 9L2 4V2L10 7L18 2V4Z"
-        fill="#64748B"
-      />
-    </svg>
-  );
-}
-
-function LockIcon() {
-  return (
-    <svg
-      width="18"
-      height="20"
-      viewBox="0 0 18 20"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M4.5 7.778H2.25C1.653 7.778 1.081 8.012 0.659 8.429C0.237 8.845 0 9.411 0 10V17.778C0 18.367 0.237 18.932 0.659 19.349C1.081 19.766 1.653 20 2.25 20H15.75C16.347 20 16.919 19.766 17.341 19.349C17.763 18.932 18 18.367 18 17.778V10C18 9.411 17.763 8.845 17.341 8.429C16.919 8.012 16.347 7.778 15.75 7.778H13.5M4.5 7.778V4.444C4.5 3.266 4.974 2.135 5.818 1.302C6.662 0.468 7.807 0 9 0C10.193 0 11.338 0.468 12.182 1.302C13.026 2.135 13.5 3.266 13.5 4.444V7.778M4.5 7.778H13.5M9 12.222V15.556"
-        stroke="#64748B"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function EyeOffIcon() {
-  return (
-    <svg
-      width="20"
-      height="16"
-      viewBox="0 0 20 16"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M8.73 1.073C9.15 1.024 9.58 1 10 1C14.66 1 18.4 3.903 20 8C19.61 8.997 19.09 9.935 18.44 10.788M4.52 2.519C2.48 3.764 0.9 5.693 0 8C1.6 12.097 5.34 15 10 15C11.93 15.01 13.83 14.484 15.48 13.48M7.88 5.88C7.6 6.159 7.38 6.489 7.23 6.853C7.08 7.217 7 7.608 7 8.002C7 8.396 7.08 8.786 7.23 9.15C7.38 9.514 7.6 9.844 7.88 10.123C8.16 10.402 8.49 10.623 8.85 10.773C9.22 10.924 9.61 11.002 10 11.002C10.4 11.002 10.79 10.924 11.15 10.773C11.51 10.623 11.84 10.402 12.12 10.123"
-        stroke="#64748B"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M2 0L18 16"
-        stroke="#64748B"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-    </svg>
   );
 }
