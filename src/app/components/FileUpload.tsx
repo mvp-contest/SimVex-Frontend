@@ -60,8 +60,8 @@ export default function FileUpload({ onFileSelect, accept = ".gltf,.glb,.obj,.st
     <div
       className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
         isDragging
-          ? 'border-[#4a9eff] bg-[#4a9eff]/10'
-          : 'border-[#333b45] hover:border-[#4a9eff]/50'
+          ? 'border-(--color-accent-blue) bg-(--color-accent-blue)/10'
+          : 'border-(--color-border-primary) hover:border-(--color-accent-blue)/50 hover:bg-(--color-card-bg)/50'
       }`}
       onClick={() => fileInputRef.current?.click()}
       onDrop={handleDrop}
@@ -77,12 +77,14 @@ export default function FileUpload({ onFileSelect, accept = ".gltf,.glb,.obj,.st
         multiple
       />
       
-      <Upload className="w-12 h-12 mx-auto mb-4 text-slate-500" />
+      <div className="w-12 h-12 mx-auto mb-4 text-(--color-text-muted) flex items-center justify-center bg-(--color-input-bg) rounded-full">
+        <Upload size={24} />
+      </div>
       
-      <p className="text-slate-300 font-medium mb-2">
+      <p className="text-(--color-text-primary) font-medium mb-2">
         Click to upload or drag and drop
       </p>
-      <p className="text-slate-500 text-sm">
+      <p className="text-(--color-text-muted) text-sm">
         GLTF, GLB, OBJ, or STL files
       </p>
     </div>

@@ -3,6 +3,9 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/app/context/AuthContext";
 import { profile as profileApi } from "@/lib/api";
+import Button from "@/components/ui/Button";
+import TextInput from "@/components/ui/TextInput";
+import TextArea from "@/components/ui/TextArea";
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -58,186 +61,128 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-slate-400">Loading settings...</p>
+        <p className="text-(--color-text-muted)">Loading settings...</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl">
-      <h2 className="font-semibold text-slate-200 text-xl leading-normal mb-1">
-        Settings
-      </h2>
-      <p className="font-medium text-slate-500 text-sm leading-normal mb-8">
-        Manage your account settings and preferences.
-      </p>
+    <div className="max-w-[1000px] mx-auto p-6 md:p-8">
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-(--color-text-primary) mb-2">
+          Settings
+        </h2>
+        <p className="text-(--color-text-secondary)">
+          Manage your account settings and preferences.
+        </p>
+      </div>
 
       {error && (
-        <div className="mb-4 p-4 bg-red-900/20 border border-red-500 rounded-md">
-          <p className="text-red-400 text-sm">{error}</p>
+        <div className="mb-6 p-4 bg-(--color-status-danger-bg) border border-(--color-status-danger-border) rounded-md">
+          <p className="text-(--color-status-danger) text-sm">{error}</p>
         </div>
       )}
 
       {success && (
-        <div className="mb-4 p-4 bg-green-900/20 border border-green-500 rounded-md">
+        <div className="mb-6 p-4 bg-green-900/20 border border-green-500 rounded-md">
           <p className="text-green-400 text-sm">{success}</p>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Profile Section */}
-        <div
-          className="lg:col-span-2 rounded-lg p-6"
-          style={{
-            backgroundColor: "#1e2127",
-            border: "1px solid #333b45",
-          }}
-        >
-          <h3 className="font-semibold text-slate-200 text-lg leading-normal mb-6">
+        <div className="lg:col-span-2 bg-(--color-card-bg) border border-(--color-border-primary) rounded-xl p-6 sm:p-8">
+          <h3 className="text-lg font-semibold text-(--color-text-primary) mb-6">
             Profile Information
           </h3>
 
           {/* Avatar */}
-          <div className="mb-6">
-            <label className="font-medium text-slate-400 text-sm leading-normal block mb-3">
+          <div className="mb-8">
+            <label className="text-sm font-medium text-(--color-text-secondary) block mb-3">
               Profile Picture
             </label>
             <div className="flex items-center gap-4">
-              <div
-                className="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-medium"
-                style={{ backgroundColor: "#333b45", color: "#94a3b8" }}
-              >
+              <div className="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-medium bg-(--color-border-primary) text-(--color-text-muted)">
                 {nickname?.charAt(0).toUpperCase() || "U"}
               </div>
-              <button
-                className="px-4 py-2 rounded-md text-sm font-medium transition-opacity hover:opacity-90"
-                style={{
-                  backgroundColor: "#333b45",
-                  color: "#e2e8f0",
-                }}
-              >
+              <Button variant="secondary" size="sm">
                 Change Avatar
-              </button>
+              </Button>
             </div>
           </div>
 
-          {/* Nickname */}
-          <div className="mb-6">
-            <label className="font-medium text-slate-400 text-sm leading-normal block mb-2">
-              Nickname
-            </label>
-            <input
-              type="text"
+          <div className="space-y-6">
+            <TextInput
+              label="Nickname"
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
-              className="w-full h-10 rounded-md px-4 text-sm outline-none"
-              style={{
-                backgroundColor: "var(--input-bg)",
-                border: "1px solid var(--input-border)",
-                color: "var(--text-light)",
-              }}
               placeholder="Enter your nickname"
             />
-          </div>
 
-          {/* Email (Read-only) */}
-          <div className="mb-6">
-            <label className="font-medium text-slate-400 text-sm leading-normal block mb-2">
-              Email
-            </label>
-            <input
-              type="email"
-              value={user?.email || ""}
-              disabled
-              className="w-full h-10 rounded-md px-4 text-sm outline-none opacity-60 cursor-not-allowed"
-              style={{
-                backgroundColor: "var(--input-bg)",
-                border: "1px solid var(--input-border)",
-                color: "var(--text-light)",
-              }}
-            />
-            <p className="text-slate-500 text-xs mt-1">
-              Email cannot be changed
-            </p>
-          </div>
+            <div className="space-y-1.5">
+              <TextInput
+                label="Email"
+                type="email"
+                value={user?.email || ""}
+                disabled
+                className="cursor-not-allowed opacity-60"
+              />
+              <p className="text-xs text-(--color-text-muted)">
+                Email cannot be changed
+              </p>
+            </div>
 
-          {/* About Us */}
-          <div className="mb-6">
-            <label className="font-medium text-slate-400 text-sm leading-normal block mb-2">
-              About
-            </label>
-            <textarea
+            <TextArea
+              label="About"
               value={aboutUs}
               onChange={(e) => setAboutUs(e.target.value)}
               rows={4}
-              className="w-full rounded-md px-4 py-3 text-sm outline-none resize-none"
-              style={{
-                backgroundColor: "var(--input-bg)",
-                border: "1px solid var(--input-border)",
-                color: "var(--text-light)",
-              }}
               placeholder="Tell us about yourself..."
             />
-          </div>
 
-          {/* Save Button */}
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="px-6 py-3 rounded-md text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
-            style={{
-              backgroundColor: "var(--accent-blue)",
-              color: "#e2e8f0",
-            }}
-          >
-            {saving ? "Saving..." : "Save Changes"}
-          </button>
+            <div className="pt-4">
+              <Button
+                onClick={handleSave}
+                disabled={saving}
+                className="min-w-[120px]"
+              >
+                {saving ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Account Info Sidebar */}
-        <div
-          className="rounded-lg p-6"
-          style={{
-            backgroundColor: "#1e2127",
-            border: "1px solid #333b45",
-          }}
-        >
-          <h3 className="font-semibold text-slate-200 text-base leading-normal mb-4">
+        <div className="bg-(--color-card-bg) border border-(--color-border-primary) rounded-xl p-6 h-fit">
+          <h3 className="text-base font-semibold text-(--color-text-primary) mb-4">
             Account Information
           </h3>
 
           <div className="space-y-4">
             <div>
-              <p className="text-slate-500 text-xs mb-1">Personal ID</p>
-              <p className="text-slate-200 text-sm font-medium">
+              <p className="text-xs text-(--color-text-muted) mb-1">Personal ID</p>
+              <p className="text-sm font-medium text-(--color-text-primary)">
                 {user?.personalId}
               </p>
             </div>
 
             <div>
-              <p className="text-slate-500 text-xs mb-1">User ID</p>
-              <p className="text-slate-200 text-sm font-mono text-xs break-all">
+              <p className="text-xs text-(--color-text-muted) mb-1">User ID</p>
+              <p className="text-xs font-mono text-(--color-text-secondary) break-all bg-(--color-input-bg) p-2 rounded border border-(--color-input-border)">
                 {user?.id}
               </p>
             </div>
 
-            <div className="pt-4 border-t" style={{ borderColor: "#333b45" }}>
-              <h4 className="font-semibold text-slate-200 text-sm mb-2">
+            <div className="pt-4 mt-2 border-t border-(--color-border-primary)">
+              <h4 className="text-sm font-medium text-(--color-text-primary) mb-2">
                 Danger Zone
               </h4>
-              <p className="text-slate-500 text-xs mb-3">
+              <p className="text-xs text-(--color-text-muted) mb-3">
                 Permanently delete your account and all associated data.
               </p>
-              <button
-                className="w-full py-2 rounded-md text-xs font-medium transition-opacity hover:opacity-90"
-                style={{
-                  backgroundColor: "#7f1d1d",
-                  color: "#fca5a5",
-                  border: "1px solid #991b1b",
-                }}
-              >
+              <Button variant="danger" size="sm" className="w-full">
                 Delete Account
-              </button>
+              </Button>
             </div>
           </div>
         </div>

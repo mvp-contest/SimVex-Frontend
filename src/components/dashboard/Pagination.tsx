@@ -1,7 +1,7 @@
 "use client";
 
-import ChevronLeftIcon from "@/components/icons/chevron-left-icon.svg";
-import ChevronRightIcon from "@/components/icons/chevron-right-icon.svg";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import Button from "@/components/ui/Button";
 
 interface PaginationProps {
   currentPage: number;
@@ -22,31 +22,35 @@ export default function Pagination({
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
   return (
-    <div className="flex items-center justify-center gap-6 py-8">
-      <button
+    <div className="flex items-center justify-center gap-6 py-8 border-t border-(--color-border-primary) mt-8">
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={() => onPageChange?.(currentPage - 1)}
         disabled={currentPage === 1}
-        className="disabled:opacity-30"
+        className="px-2"
       >
-        <ChevronLeftIcon className="w-[12px] h-[21px]" style={{ fill: "#64748B" }} />
-      </button>
+        <ChevronLeft size={20} />
+      </Button>
 
       <div className="flex items-center gap-4">
-        <div className="w-[40px] h-[40px] flex items-center justify-center bg-(--color-card-bg) border-[2px] border-(--color-border-primary) rounded text-[18px] font-medium text-(--color-text-primary)">
+        <div className="w-10 h-10 flex items-center justify-center bg-(--color-card-bg) border border-(--color-border-primary) rounded-lg text-sm font-bold text-(--color-text-primary)">
           {currentPage}
         </div>
-        <span className="text-[18px] font-medium text-(--color-text-primary)">
+        <span className="text-sm font-medium text-(--color-text-muted)">
           {startItem}-{endItem} of {totalItems} Projects
         </span>
       </div>
 
-      <button
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={() => onPageChange?.(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="disabled:opacity-30"
+        className="px-2"
       >
-        <ChevronRightIcon className="w-[12px] h-[21px]" style={{ fill: "#64748B" }} />
-      </button>
+        <ChevronRight size={20} />
+      </Button>
     </div>
   );
 }

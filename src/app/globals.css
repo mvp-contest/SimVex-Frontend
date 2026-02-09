@@ -21,6 +21,11 @@
   --sidebar-bg: #14171c;
   --sidebar-border: #1e2127;
   --border-primary: #333B45;
+  --status-danger: #ef4444;
+  --status-danger-bg: #7f1d1d;
+  --status-danger-border: #991b1b;
+  --status-success: #22c55e;
+  --status-warning: #f59e0b;
 }
 
 @theme inline {
@@ -43,6 +48,11 @@
   --color-sidebar-bg: var(--sidebar-bg);
   --color-sidebar-border: var(--sidebar-border);
   --color-border-primary: var(--border-primary);
+  --color-status-danger: var(--status-danger);
+  --color-status-danger-bg: var(--status-danger-bg);
+  --color-status-danger-border: var(--status-danger-border);
+  --color-status-success: var(--status-success);
+  --color-status-warning: var(--status-warning);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-pretendard: "Pretendard Variable", -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;

@@ -265,7 +265,7 @@ export default function ThreeViewer({ models }: ThreeViewerProps) {
         {models.length === 0 && (
           <mesh castShadow receiveShadow>
             <boxGeometry args={[2, 2, 2]} />
-            <meshStandardMaterial color="#4a9eff" metalness={0.3} roughness={0.4} />
+            <meshStandardMaterial color="#3b82f6" metalness={0.3} roughness={0.4} />
           </mesh>
         )}
       </Canvas>
@@ -275,34 +275,34 @@ export default function ThreeViewer({ models }: ThreeViewerProps) {
         <div className="absolute top-4 left-4">
           <button
             onClick={() => setShowControls(!showControls)}
-            className="bg-[#12141b]/90 border border-[#333b45] rounded-lg px-3 py-2 hover:bg-[#1e2127] transition-colors flex items-center gap-2"
+            className="bg-(--color-card-bg)/90 border border-(--color-border-primary) rounded-lg px-3 py-2 hover:bg-(--color-input-bg) transition-colors flex items-center gap-2 backdrop-blur-sm"
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-slate-300">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-(--color-text-light)">
               <path d="M8 2v12M2 8h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
             </svg>
-            <span className="text-slate-300 text-xs font-semibold">Controls</span>
+            <span className="text-(--color-text-light) text-xs font-semibold">Controls</span>
             <svg 
               width="12" 
               height="12" 
               viewBox="0 0 12 12" 
               fill="none" 
-              className={`text-slate-400 transition-transform ${showControls ? 'rotate-180' : ''}`}
+              className={`text-(--color-text-muted) transition-transform ${showControls ? 'rotate-180' : ''}`}
             >
               <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
           
           {showControls && (
-            <div className="mt-2 bg-[#12141b]/90 border border-[#333b45] rounded-lg p-3 animate-fadeIn">
-              <div className="text-slate-400 text-xs space-y-1">
-                <p>• <span className="text-[#4a9eff]">Hover</span> = Blue outline</p>
-                <p>• <span className="text-[#ff9500]">Click</span> = Select (orange)</p>
-                <p>• <span className="text-slate-300">G</span> = Move</p>
-                <p>• <span className="text-slate-300">R</span> = Rotate</p>
-                <p>• <span className="text-slate-300">S</span> = Scale</p>
+            <div className="mt-2 bg-(--color-card-bg)/90 border border-(--color-border-primary) rounded-lg p-3 animate-fadeIn backdrop-blur-sm">
+              <div className="text-(--color-text-muted) text-xs space-y-1">
+                <p>• <span className="text-(--color-accent-blue)">Hover</span> = Blue outline</p>
+                <p>• <span className="text-(--color-status-warning)">Click</span> = Select (orange)</p>
+                <p>• <span className="text-(--color-text-light)">G</span> = Move</p>
+                <p>• <span className="text-(--color-text-light)">R</span> = Rotate</p>
+                <p>• <span className="text-(--color-text-light)">S</span> = Scale</p>
                 <p>• Click empty space to deselect</p>
               </div>
-              <p className="text-slate-500 text-xs mt-2 pt-2 border-t border-[#333b45]">{models.length} model{models.length > 1 ? 's' : ''}</p>
+              <p className="text-(--color-text-secondary) text-xs mt-2 pt-2 border-t border-(--color-border-primary)">{models.length} model{models.length > 1 ? 's' : ''}</p>
             </div>
           )}
         </div>

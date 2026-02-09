@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { Users, Eye, Clock } from "lucide-react";
 
 interface ProjectCardProps {
   project: {
@@ -16,53 +17,49 @@ interface ProjectCardProps {
 
 export default function ProjectCard({ project }: ProjectCardProps) {
   return (
-    <div className="bg-(--color-card-bg) border-[1px] border-(--color-border-primary) rounded-[15px] p-6 flex flex-col items-center gap-4 hover:border-(--color-accent-white) transition-colors cursor-pointer">
+    <div className="bg-(--color-card-bg) border border-(--color-border-primary) rounded-xl p-5 flex flex-col gap-4 hover:border-(--color-accent-blue) transition-colors cursor-pointer group">
       {/* Thumbnail */}
-      <div className="w-[221px] h-[221px] flex items-center justify-center">
+      <div className="relative aspect-square w-full bg-[#12141b] rounded-lg flex items-center justify-center border border-(--color-card-border) overflow-hidden">
         <Image
           src={project.thumbnailUrl}
           alt={project.name}
-          width={221}
-          height={221}
-          className="object-contain"
+          fill
+          className="object-contain p-4 group-hover:scale-105 transition-transform duration-300"
         />
       </div>
 
       {/* Project info */}
-      <div className="w-full">
-        <h3 className="text-[28px] font-semibold text-(--color-text-primary) mb-1">
-          {project.name}
-        </h3>
-        <p className="text-[18px] font-medium text-(--color-text-muted) mb-4">
-          {project.owner}
-        </p>
-
-        {/* Divider */}
-        <div className="w-full h-[2px] bg-(--color-border-primary) mb-4" />
-
-        {/* Stats */}
-        <div className="flex items-center gap-4 mb-4">
-          {/* Avatar placeholders */}
-          <div className="flex items-center -space-x-2">
-            <div className="w-[30px] h-[30px] rounded-full bg-gray-400 border-2 border-(--color-card-bg)" />
-            <div className="w-[30px] h-[30px] rounded-full bg-red-400 border-2 border-(--color-card-bg)" />
-            <div className="w-[30px] h-[30px] rounded-full bg-gray-700 border-2 border-(--color-card-bg)" />
-          </div>
-          <span className="text-[18px] font-medium text-(--color-text-muted)">
-            +{project.memberCount} memvers
-          </span>
-          <span className="text-[20px] font-medium text-(--color-text-muted) ml-auto">
-            {project.viewCount} Views
-          </span>
+      <div className="flex flex-col gap-3">
+        <div>
+          <h3 className="text-xl font-semibold text-(--color-text-primary) mb-1 truncate">
+            {project.name}
+          </h3>
+          <p className="text-sm text-(--color-text-muted) truncate">
+            Owned by {project.owner}
+          </p>
         </div>
 
         {/* Divider */}
-        <div className="w-full h-[2px] bg-(--color-border-primary) mb-3" />
+        <div className="h-px bg-(--color-border-primary)" />
 
-        {/* Updated date */}
-        <p className="text-[18px] font-medium text-(--color-text-muted) text-center">
-          Updated {project.updatedAt}
-        </p>
+        {/* Stats */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5 text-(--color-text-secondary)" title="Members">
+              <Users size={16} />
+              <span className="text-sm font-medium">{project.memberCount}</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-(--color-text-secondary)" title="Views">
+              <Eye size={16} />
+              <span className="text-sm font-medium">{project.viewCount}</span>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-1.5 text-(--color-text-muted)" title="Last updated">
+            <Clock size={14} />
+            <span className="text-xs">{project.updatedAt}</span>
+          </div>
+        </div>
       </div>
     </div>
   );

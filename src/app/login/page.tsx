@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 import { auth } from "@/lib/api";
 import { useAuth } from "@/app/context/AuthContext";
+import Button from "@/components/ui/Button";
+import TextInput from "@/components/ui/TextInput";
+import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -42,111 +44,81 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div
-        className="w-full max-w-[678px] rounded-[14px] p-12"
-        style={{
-          backgroundColor: "var(--card-bg)",
-          border: "3px solid var(--card-border)",
-        }}
-      >
-        <h1 className="text-[28px] font-normal text-white text-center mb-12">
-          Welcome Back
-        </h1>
+    <div className="min-h-screen flex items-center justify-center p-4 bg-(--color-page-bg)">
+      <div className="w-full max-w-[500px] bg-(--color-card-bg) border border-(--color-card-border) rounded-2xl p-8 sm:p-12 shadow-xl">
+        <div className="text-center mb-10">
+          <h1 className="text-3xl font-bold text-(--color-text-primary) mb-2">
+            Welcome Back
+          </h1>
+          <p className="text-(--color-text-secondary)">
+            Please sign in to continue
+          </p>
+        </div>
 
-        <form className="space-y-5" onSubmit={handleSubmit}>
+        <form className="space-y-6" onSubmit={handleSubmit}>
           {error && (
-            <p className="text-red-400 text-sm text-center">{error}</p>
+            <div className="p-3 bg-(--color-status-danger-bg) border border-(--color-status-danger-border) rounded-md text-(--color-status-danger) text-sm text-center">
+              {error}
+            </div>
           )}
 
           {/* Email Address */}
           <div className="relative">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2">
-              <Image
-                src="/icons/auth/email.svg"
-                alt="Email"
-                width={20}
-                height={16}
-              />
+            <div className="absolute left-3 top-[38px] -translate-y-1/2 text-(--color-text-muted) z-10">
+              <Mail size={20} />
             </div>
-            <input
+            <TextInput
+              label="Email Address"
               type="email"
-              placeholder="Email Address"
+              placeholder="Enter your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full h-[58px] rounded-md pl-12 pr-4 text-[15px] outline-none"
-              style={{
-                backgroundColor: "var(--input-bg)",
-                border: "2px solid var(--input-border)",
-                color: "var(--text-muted)",
-              }}
+              className="pl-10"
             />
           </div>
 
           {/* Password */}
           <div className="relative">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2">
-              <Image
-                src="/icons/auth/lock.svg"
-                alt="Lock"
-                width={18}
-                height={20}
-              />
+            <div className="absolute left-3 top-[38px] -translate-y-1/2 text-(--color-text-muted) z-10">
+              <Lock size={20} />
             </div>
-            <input
+            <TextInput
+              label="Password"
               type={showPassword ? "text" : "password"}
-              placeholder="Password"
+              placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full h-[58px] rounded-md pl-12 pr-12 text-[15px] outline-none"
-              style={{
-                backgroundColor: "var(--input-bg)",
-                border: "2px solid var(--input-border)",
-                color: "var(--text-muted)",
-              }}
+              className="pl-10 pr-10"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2"
+              className="absolute right-3 top-[38px] -translate-y-1/2 text-(--color-text-muted) hover:text-(--color-text-primary) transition-colors"
             >
-              <Image
-                src="/icons/auth/eye-off.svg"
-                alt="Toggle password"
-                width={20}
-                height={16}
-              />
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
 
           {/* Submit Button */}
-          <div className="pt-4">
-            <button
+          <div className="pt-2">
+            <Button
               type="submit"
               disabled={loading}
-              className="w-full h-[64px] rounded-md text-[18px] font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
-              style={{
-                backgroundColor: "var(--button-bg)",
-                color: "var(--button-text)",
-              }}
+              className="w-full py-3 text-base"
             >
               {loading ? "Logging in..." : "Log In"}
-            </button>
+            </Button>
           </div>
 
           {/* Sign Up Link */}
-          <div className="text-center pt-6">
-            <span
-              style={{ color: "var(--text-light)" }}
-              className="text-[14px]"
-            >
+          <div className="text-center pt-2">
+            <span className="text-sm text-(--color-text-muted)">
               Don&apos;t have an account?{" "}
               <Link
                 href="/register"
-                style={{ color: "var(--text-light)" }}
-                className="underline"
+                className="text-(--color-accent-blue) hover:underline font-medium"
               >
                 Sign Up
               </Link>

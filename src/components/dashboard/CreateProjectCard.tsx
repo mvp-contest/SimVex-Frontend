@@ -1,13 +1,17 @@
+"use client";
+
 import Link from "next/link";
-import PlusIcon from "@/components/icons/plus-icon.svg";
+import { Plus } from "lucide-react";
 
 export default function CreateProjectCard() {
   return (
-    <Link href="/projects/create">
-      <div className="bg-(--color-card-bg) border-[2px] border-dashed border-(--color-border-primary) rounded-[15px] h-full min-h-[454px] flex flex-col items-center justify-center gap-6 hover:border-(--color-accent-white) transition-colors cursor-pointer">
-        <PlusIcon className="w-[62px] h-[62px]" style={{ fill: "#64748B" }} />
-        <p className="text-[24px] font-medium text-(--color-text-primary)">
-          Creat New Project
+    <Link href="/projects/create" className="block h-full">
+      <div className="bg-(--color-card-bg) border-2 border-dashed border-(--color-border-primary) rounded-xl h-full min-h-[380px] flex flex-col items-center justify-center gap-6 hover:border-(--color-accent-white) hover:bg-(--color-card-bg)/80 transition-all cursor-pointer group">
+        <div className="w-16 h-16 rounded-full bg-(--color-input-bg) flex items-center justify-center text-(--color-text-muted) group-hover:text-(--color-accent-blue) group-hover:bg-(--color-accent-blue)/10 transition-colors">
+          <Plus size={32} />
+        </div>
+        <p className="text-xl font-medium text-(--color-text-primary) group-hover:text-(--color-accent-white) transition-colors">
+          Create New Project
         </p>
       </div>
     </Link>

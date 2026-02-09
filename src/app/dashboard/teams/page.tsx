@@ -5,6 +5,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { teams as teamsApi, type Team } from "@/lib/api";
 import { useAuth } from "@/app/context/AuthContext";
+import Button from "@/components/ui/Button";
+import TextInput from "@/components/ui/TextInput";
+import { Search, Plus, Check } from "lucide-react";
 
 interface TeamWithUI extends Team {
   selected: boolean;
@@ -49,26 +52,19 @@ export default function TeamsPage() {
 
     try {
       setIsCreating(true);
-      console.log("Creating team with name:", newTeamName);
-      const result = await teamsApi.create(newTeamName, user.id);
-      console.log("Team created successfully:", result);
+      await teamsApi.create(newTeamName, user.id);
       setNewTeamName("");
       setShowCreateForm(false);
       await loadTeams();
     } catch (err: unknown) {
-      console.error("Team creation error:", err);
-      console.error("Error details:", JSON.stringify(err, null, 2));
-
       const error = err as { message?: string };
       let userMessage = "Failed to create team. ";
       if (error.message?.includes("500") || error.message?.includes("Internal server error")) {
-        userMessage += "The server encountered an error. Please try again later or contact support.";
+        userMessage += "The server encountered an error. Please try again later.";
       } else {
         userMessage += error.message || "Unknown error occurred.";
       }
-
       setError(userMessage);
-      alert(userMessage);
     } finally {
       setIsCreating(false);
     }
@@ -87,152 +83,123 @@ export default function TeamsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-slate-400">Loading teams...</p>
+        <p className="text-(--color-text-muted)">Loading teams...</p>
       </div>
     );
   }
 
   return (
-    <div>
+    <div className="max-w-[1200px] mx-auto p-6 md:p-8">
       {/* Page Header */}
-      <h2 className="font-semibold text-slate-200 text-xl leading-normal mb-1">
-        My Teams
-      </h2>
-      <p className="font-medium text-slate-500 text-sm leading-normal mb-8">
-        Manage and view the teams you&apos;re a part of.
-      </p>
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-(--color-text-primary) mb-2">
+          My Teams
+        </h2>
+        <p className="text-(--color-text-secondary)">
+          Manage and view the teams you&apos;re a part of.
+        </p>
+      </div>
 
       {error && (
-        <div className="mb-4 p-4 bg-red-900/20 border border-red-500 rounded-md">
-          <p className="text-red-400 text-sm">{error}</p>
+        <div className="mb-6 p-4 bg-(--color-status-danger-bg) border border-(--color-status-danger-border) rounded-md">
+          <p className="text-(--color-status-danger) text-sm">{error}</p>
         </div>
       )}
 
-      {/* All Teams Header + Search */}
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-slate-200 text-base leading-normal">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-lg font-semibold text-(--color-text-primary)">
           All Teams
         </h3>
-        <div
-          className="w-[220px] h-7 rounded-md flex items-center px-3 gap-2 flex-shrink-0"
-          style={{
-            backgroundColor: "var(--input-bg)",
-            border: "1px solid var(--input-border)",
-          }}
-        >
+        <div className="w-[300px] relative">
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-(--color-text-muted)">
+            <Search size={16} />
+          </div>
           <input
             type="search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search Teams..."
-            className="font-medium text-slate-500 text-xs leading-normal bg-transparent w-full outline-none placeholder:text-slate-500"
-            aria-label="Search teams"
-          />
-          <Image
-            src="/icons/action/search.svg"
-            alt="Search"
-            width={14}
-            height={14}
-            className="flex-shrink-0"
+            className="w-full pl-9 pr-4 py-2 bg-(--color-input-bg) border border-(--color-input-border) rounded-md text-sm text-(--color-text-primary) outline-none focus:border-(--color-accent-blue) transition-colors"
           />
         </div>
       </div>
 
       {/* Team Cards Grid */}
-      <div className="grid grid-cols-4 gap-x-5 gap-y-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {filteredTeams.map((team) => (
           <article
             key={team.id}
-            className="rounded-xl overflow-hidden"
-            style={{
-              backgroundColor: "#1e2127",
-              border: "1px solid #333b45",
-            }}
+            className="group bg-(--color-card-bg) border border-(--color-card-border) rounded-xl overflow-hidden hover:border-(--color-accent-blue) transition-colors"
           >
             {/* Thumbnail area */}
-            <div
-              className="relative h-[120px] flex items-center justify-center"
-              style={{
-                backgroundColor: "#12141b",
-                borderBottom: "1px solid #333b45",
-              }}
-            >
+            <div className="relative h-[140px] bg-[#12141b] flex items-center justify-center border-b border-(--color-card-border)">
               <button
                 onClick={() => toggleTeamSelection(team.id)}
-                className="absolute top-2 left-2 w-5 h-5 flex items-center justify-center"
+                className="absolute top-3 left-3 w-6 h-6 flex items-center justify-center rounded bg-(--color-card-bg) border border-(--color-card-border) text-(--color-accent-blue) opacity-0 group-hover:opacity-100 transition-opacity"
               >
-                <Image
-                  src={
-                    team.selected
-                      ? "/icons/action/checkbox-checked.svg"
-                      : "/icons/action/checkbox-unchecked.svg"
-                  }
-                  alt={team.selected ? "Selected" : "Unselected"}
-                  width={18}
-                  height={18}
-                />
+                {team.selected && <Check size={14} />}
               </button>
               <Image
                 src="/icons/brand/cube-preview.svg"
                 alt="Team Icon"
                 width={80}
                 height={80}
+                className="opacity-80 group-hover:opacity-100 transition-opacity"
               />
             </div>
 
             {/* Info */}
-            <div className="px-4 pt-3 pb-4">
-              <h4 className="font-semibold text-slate-200 text-sm leading-normal">
-                {team.name}
-              </h4>
-              <span className="font-medium text-slate-500 text-xs leading-normal">
-                {team.members.length} member{team.members.length !== 1 ? 's' : ''}
-              </span>
+            <div className="p-5">
+              <div className="flex justify-between items-start mb-2">
+                <h4 className="font-semibold text-(--color-text-primary) truncate flex-1 pr-2">
+                  {team.name}
+                </h4>
+                <span className="text-xs font-medium text-(--color-text-muted) bg-(--color-input-bg) px-2 py-1 rounded">
+                  {team.members.length} {team.members.length === 1 ? 'member' : 'members'}
+                </span>
+              </div>
+              
               {team.description && (
-                <p className="font-medium text-slate-500 text-xs leading-normal mt-2">
+                <p className="text-sm text-(--color-text-secondary) line-clamp-2 mb-4 h-10">
                   {team.description}
                 </p>
               )}
 
               {/* Member Avatars */}
-              <div className="flex items-center mt-3">
+              <div className="flex items-center mb-4 h-8">
                 {team.members.slice(0, 5).map((member, idx) => (
                   <div
                     key={member.id}
-                    className="w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-medium"
+                    className="w-8 h-8 rounded-full border-2 border-(--color-card-bg) flex items-center justify-center text-xs font-medium bg-(--color-input-bg) text-(--color-text-muted)"
                     style={{
-                      backgroundColor: member.user.profile.avatar ? 'transparent' : '#333b45',
-                      borderColor: "#1e2127",
-                      marginLeft: idx === 0 ? 0 : -8,
+                      marginLeft: idx === 0 ? 0 : -10,
                       zIndex: 5 - idx,
-                      color: '#94a3b8'
                     }}
                     title={member.user.profile.nickname}
                   >
                     {member.user.profile.avatar ? (
-                      <Image src={member.user.profile.avatar} alt={member.user.profile.nickname} width={24} height={24} className="rounded-full" />
+                      <Image src={member.user.profile.avatar} alt={member.user.profile.nickname} width={32} height={32} className="rounded-full" />
                     ) : (
                       member.user.profile.nickname.charAt(0).toUpperCase()
                     )}
                   </div>
                 ))}
                 {team.members.length > 5 && (
-                  <span className="font-medium text-slate-500 text-xs ml-2">
+                  <div 
+                    className="w-8 h-8 rounded-full border-2 border-(--color-card-bg) flex items-center justify-center text-xs font-medium bg-(--color-input-bg) text-(--color-text-muted)"
+                    style={{ marginLeft: -10, zIndex: 0 }}
+                  >
                     +{team.members.length - 5}
-                  </span>
+                  </div>
                 )}
               </div>
 
               {/* View Team Button */}
-              <Link
-                href={`/dashboard/teams/${team.id}`}
-                className="block w-full mt-4 py-2 rounded-md text-center text-sm font-medium transition-opacity hover:opacity-90"
-                style={{
-                  backgroundColor: "#333b45",
-                  color: "#e2e8f0",
-                }}
-              >
-                View Team
+              <Link href={`/dashboard/teams/${team.id}`}>
+                <Button variant="secondary" className="w-full text-sm py-2">
+                  View Team
+                </Button>
               </Link>
             </div>
           </article>
@@ -242,102 +209,60 @@ export default function TeamsPage() {
         {showCreateForm ? (
           <form
             onSubmit={handleCreateTeam}
-            className="rounded-xl flex flex-col items-center justify-center gap-4 min-h-[300px] p-6"
-            style={{
-              border: "2px dashed #333b45",
-              backgroundColor: "#1e2127",
-            }}
+            className="bg-(--color-card-bg) border-2 border-dashed border-(--color-card-border) rounded-xl flex flex-col items-center justify-center gap-4 p-6 min-h-[340px]"
           >
-            <h3 className="font-semibold text-slate-200 text-base">Create New Team</h3>
-            <input
-              type="text"
+            <h3 className="font-semibold text-(--color-text-primary)">Create New Team</h3>
+            <TextInput
               value={newTeamName}
               onChange={(e) => setNewTeamName(e.target.value)}
               placeholder="Team name"
               autoFocus
-              className="w-full px-4 py-2 rounded-md bg-[#12141b] border border-[#333b45] text-slate-200 text-sm outline-none placeholder:text-slate-500"
+              className="text-center"
             />
-            <div className="flex gap-2 w-full">
-              <button
+            <div className="flex flex-col gap-2 w-full mt-2">
+              <Button
                 type="submit"
+                variant="primary"
                 disabled={isCreating || !newTeamName.trim()}
-                className="flex-1 px-4 py-2 rounded-md bg-[#4a9eff] text-white text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                className="w-full"
               >
                 {isCreating ? "Creating..." : "Create"}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => {
                   setShowCreateForm(false);
                   setNewTeamName("");
                 }}
-                className="flex-1 px-4 py-2 rounded-md bg-[#333b45] text-slate-300 text-sm font-medium hover:opacity-90 transition-opacity"
+                className="w-full"
               >
                 Cancel
-              </button>
+              </Button>
             </div>
           </form>
         ) : (
           <button
             onClick={() => setShowCreateForm(true)}
-            className="rounded-xl flex flex-col items-center justify-center gap-4 min-h-[300px] cursor-pointer transition-opacity hover:opacity-80"
-            style={{
-              border: "2px dashed #333b45",
-              backgroundColor: "transparent",
-            }}
+            className="group bg-transparent border-2 border-dashed border-(--color-card-border) rounded-xl flex flex-col items-center justify-center gap-4 min-h-[340px] hover:border-(--color-accent-blue) hover:bg-(--color-card-bg)/30 transition-all"
           >
-            <Image
-              src="/icons/action/plus.svg"
-              alt="Create"
-              width={40}
-              height={40}
-            />
-            <span className="font-medium text-slate-200 text-sm">
+            <div className="w-12 h-12 rounded-full bg-(--color-input-bg) flex items-center justify-center text-(--color-text-muted) group-hover:text-(--color-accent-blue) group-hover:bg-(--color-accent-blue)/10 transition-colors">
+              <Plus size={24} />
+            </div>
+            <span className="font-medium text-(--color-text-secondary) group-hover:text-(--color-text-primary)">
               Create New Team
             </span>
           </button>
         )}
       </div>
 
-      {/* Pagination */}
-      <div className="w-full h-px bg-[#333b45] mb-4" />
-      <div className="flex items-center justify-center gap-3">
-        <button
-          className="flex items-center justify-center hover:opacity-70 transition-opacity"
-          aria-label="Previous page"
-        >
-          <Image
-            src="/icons/action/arrow-left.svg"
-            alt="Previous"
-            width={8}
-            height={14}
-          />
-        </button>
-
-        <div
-          className="w-8 h-8 rounded-lg flex items-center justify-center"
-          style={{ border: "1.5px solid #333b45" }}
-        >
-          <span className="font-medium text-slate-200 text-xs leading-normal">
-            1
-          </span>
+      {/* Pagination (Optional - currently static) */}
+      <div className="border-t border-(--color-border-primary) pt-4 flex items-center justify-center gap-2">
+        <Button variant="ghost" size="sm" disabled>Previous</Button>
+        <div className="px-3 py-1 rounded bg-(--color-card-bg) border border-(--color-card-border) text-sm font-medium text-(--color-text-primary)">
+          1
         </div>
-
-        <span className="font-medium text-slate-200 text-xs leading-normal">
-          1-{filteredTeams.length} of 1 Projects
-        </span>
-
-        <button
-          className="flex items-center justify-center hover:opacity-70 transition-opacity"
-          aria-label="Next page"
-        >
-          <Image
-            src="/icons/action/arrow-right.svg"
-            alt="Next"
-            width={8}
-            height={14}
-          />
-        </button>
+        <Button variant="ghost" size="sm" disabled>Next</Button>
       </div>
     </div>
   );

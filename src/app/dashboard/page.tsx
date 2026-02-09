@@ -21,28 +21,30 @@ const mockProjects = [
 export default function DashboardPage() {
   return (
     <DashboardLayout>
-      <div className="p-12">
+      <div className="max-w-[1400px] mx-auto p-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-[32px] font-semibold text-(--color-text-primary) mb-4">
+          <h1 className="text-3xl font-bold text-(--color-text-primary) mb-2">
             Projects Dashboard
           </h1>
-          <p className="text-[24px] font-medium text-(--color-text-secondary)">
-            Manage and create project whihin your team.
+          <p className="text-lg text-(--color-text-secondary)">
+            Manage and create project within your team.
           </p>
         </div>
 
         {/* Filters and Search */}
-        <div className="flex items-center justify-between mb-12">
-          <div className="flex gap-4">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
+          <div className="flex gap-4 w-full md:w-auto">
             <FilterDropdown label="All Teams" />
             <FilterDropdown label="All Projects" />
           </div>
-          <SearchBar />
+          <div className="w-full md:w-auto">
+            <SearchBar />
+          </div>
         </div>
 
         {/* Projects Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
           {mockProjects.map((project) => (
             <ProjectCard key={project.id} project={project} />
           ))}

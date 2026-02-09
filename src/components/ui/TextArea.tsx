@@ -1,17 +1,21 @@
 interface TextAreaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
-  label: string;
+  label?: string;
+  error?: string;
 }
 
-export default function TextArea({ label, className = "", ...props }: TextAreaProps) {
+export default function TextArea({ label, error, className = "", ...props }: TextAreaProps) {
   return (
-    <div className="flex flex-col gap-3">
-      <label className="text-[22px] font-medium text-(--color-text-primary)">
-        {label}
-      </label>
+    <div className="flex flex-col gap-1.5 w-full">
+      {label && (
+        <label className="text-sm font-medium text-(--color-text-secondary)">
+          {label}
+        </label>
+      )}
       <textarea
-        className={`w-full px-7 py-4 bg-transparent border-b-[1px] border-(--color-border-primary) text-[20px] font-medium text-(--color-text-muted) placeholder:text-(--color-text-muted) outline-none focus:border-(--color-accent-white) transition-colors resize-none min-h-[80px] ${className}`}
+        className={`w-full px-3 py-2 bg-(--color-input-bg) border border-(--color-input-border) rounded-md text-sm text-(--color-text-primary) placeholder:text-(--color-text-muted) outline-none focus:border-(--color-accent-blue) transition-colors resize-none disabled:opacity-50 ${className}`}
         {...props}
       />
+      {error && <p className="text-xs text-(--color-status-danger)">{error}</p>}
     </div>
   );
 }

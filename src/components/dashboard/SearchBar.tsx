@@ -1,6 +1,6 @@
 "use client";
 
-import SearchIcon from "@/components/icons/search-icon.svg";
+import { Search } from "lucide-react";
 
 interface SearchBarProps {
   placeholder?: string;
@@ -13,15 +13,15 @@ export default function SearchBar({ placeholder = "Search projects...", onSearch
   };
 
   return (
-    <div className="relative">
+    <div className="relative w-[300px]">
       <input
         type="text"
         placeholder={placeholder}
         onChange={handleChange}
-        className="w-[280px] h-[42px] pl-4 pr-12 bg-transparent border-[2px] border-(--color-border-primary) rounded-md text-[20px] font-medium text-(--color-text-muted) placeholder:text-(--color-text-muted) outline-none focus:border-(--color-accent-white) transition-colors"
+        className="w-full pl-4 pr-10 py-2.5 bg-transparent border-2 border-(--color-border-primary) rounded-md text-sm font-medium text-(--color-text-primary) placeholder:text-(--color-text-muted) outline-none focus:border-(--color-accent-blue) transition-colors"
       />
-      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-        <SearchIcon className="w-[20px] h-[20px]" style={{ fill: "#64748B" }} />
+      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-(--color-text-muted)">
+        <Search size={18} />
       </div>
     </div>
   );

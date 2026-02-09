@@ -6,6 +6,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { teams as teamsApi, projects as projectsApi, type Team, type Project } from "@/lib/api";
 import { useAuth } from "@/app/context/AuthContext";
+import Button from "@/components/ui/Button";
+import TextInput from "@/components/ui/TextInput";
+import { Search, Plus, Trash2, Copy, RefreshCw, ChevronDown, UserX, Box } from "lucide-react";
 
 export default function TeamDetailPage() {
   const params = useParams();
@@ -122,15 +125,15 @@ export default function TeamDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-slate-400">Loading team...</p>
+        <p className="text-(--color-text-muted)">Loading team...</p>
       </div>
     );
   }
 
   if (error || !team) {
     return (
-      <div className="p-4 bg-red-900/20 border border-red-500 rounded-md">
-        <p className="text-red-400">{error || "Team not found"}</p>
+      <div className="p-4 bg-(--color-status-danger-bg) border border-(--color-status-danger-border) rounded-md">
+        <p className="text-(--color-status-danger)">{error || "Team not found"}</p>
       </div>
     );
   }
@@ -142,106 +145,83 @@ export default function TeamDetailPage() {
   );
 
   return (
-    <div>
+    <div className="max-w-[1200px] mx-auto p-6 md:p-8">
       {/* Team Header */}
-      <h2 className="font-semibold text-slate-200 text-xl leading-normal mb-1">
-        {team.name}
-      </h2>
-      {team.description && (
-        <p className="font-medium text-slate-500 text-sm leading-normal mb-6">
-          {team.description}
-        </p>
-      )}
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-(--color-text-primary) mb-2">
+          {team.name}
+        </h2>
+        {team.description && (
+          <p className="text-(--color-text-secondary)">
+            {team.description}
+          </p>
+        )}
+      </div>
 
       {/* Tabs */}
-      <div className="flex gap-8 mb-1">
+      <div className="flex gap-8 mb-6 border-b border-(--color-border-primary)">
         <button
           onClick={() => setActiveTab("members")}
-          className={`font-medium text-base leading-normal pb-2 transition-colors ${
+          className={`pb-3 font-medium transition-colors ${
             activeTab === "members"
-              ? "text-slate-200 border-b-2 border-slate-200"
-              : "text-[#787878]"
+              ? "text-(--color-text-primary) border-b-2 border-(--color-accent-blue)"
+              : "text-(--color-text-muted) hover:text-(--color-text-secondary)"
           }`}
         >
           Team Members
         </button>
         <button
           onClick={() => setActiveTab("projects")}
-          className={`font-medium text-base leading-normal pb-2 transition-colors ${
+          className={`pb-3 font-medium transition-colors ${
             activeTab === "projects"
-              ? "text-slate-200 border-b-2 border-slate-200"
-              : "text-[#787878]"
+              ? "text-(--color-text-primary) border-b-2 border-(--color-accent-blue)"
+              : "text-(--color-text-muted) hover:text-(--color-text-secondary)"
           }`}
         >
           Projects ({projects.length})
         </button>
         <button
           onClick={() => setActiveTab("chat")}
-          className={`font-medium text-base leading-normal pb-2 transition-colors ${
+          className={`pb-3 font-medium transition-colors ${
             activeTab === "chat"
-              ? "text-slate-200 border-b-2 border-slate-200"
-              : "text-[#787878]"
+              ? "text-(--color-text-primary) border-b-2 border-(--color-accent-blue)"
+              : "text-(--color-text-muted) hover:text-(--color-text-secondary)"
           }`}
         >
           Chat
         </button>
       </div>
-      <div className="w-full h-px bg-[#333b45] mb-4" />
 
       {activeTab === "members" ? (
-        <div className="flex gap-6">
+        <div className="flex flex-col lg:flex-row gap-6">
           {/* Left: Members Table */}
           <div className="flex-1">
             {/* Subtitle + Search */}
             <div className="flex items-center justify-between mb-4">
-              <p className="font-medium text-slate-500 text-sm leading-normal">
+              <p className="text-sm text-(--color-text-secondary)">
                 Manage the members of your team below.
               </p>
-              <div
-                className="w-[220px] h-7 rounded-md flex items-center px-3 gap-2 flex-shrink-0"
-                style={{
-                  backgroundColor: "var(--input-bg)",
-                  border: "1px solid var(--input-border)",
-                }}
-              >
+              <div className="w-[250px] relative">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-(--color-text-muted)">
+                  <Search size={14} />
+                </div>
                 <input
                   type="search"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search members..."
-                  className="font-medium text-slate-500 text-xs leading-normal bg-transparent w-full outline-none placeholder:text-slate-500"
-                  aria-label="Search members"
-                />
-                <Image
-                  src="/icons/action/search.svg"
-                  alt="Search"
-                  width={14}
-                  height={14}
-                  className="flex-shrink-0"
+                  className="w-full pl-9 pr-4 py-1.5 bg-(--color-input-bg) border border-(--color-input-border) rounded-md text-sm text-(--color-text-primary) outline-none focus:border-(--color-accent-blue) transition-colors"
                 />
               </div>
             </div>
 
             {/* Table */}
-            <div
-              className="rounded-lg overflow-hidden"
-              style={{ border: "1px solid #333b45" }}
-            >
+            <div className="bg-(--color-card-bg) border border-(--color-border-primary) rounded-lg overflow-hidden">
               {/* Table Header */}
-              <div
-                className="grid grid-cols-[48px_1fr_120px_48px] items-center px-4 py-2"
-                style={{
-                  backgroundColor: "#12141b",
-                  borderBottom: "1px solid #333b45",
-                }}
-              >
-                <span className="font-medium text-slate-500 text-xs">
-                  profile
-                </span>
-                <span className="font-medium text-slate-500 text-xs">
-                  Name
-                </span>
-                <span />
+              <div className="grid grid-cols-[48px_1fr_120px_48px] items-center px-4 py-2 bg-[#12141b] border-b border-(--color-border-primary)">
+                <span className="text-xs font-medium text-(--color-text-muted)">Profile</span>
+                <span className="text-xs font-medium text-(--color-text-muted)">Name / Email</span>
+                <span className="text-xs font-medium text-(--color-text-muted)">Role</span>
                 <span />
               </div>
 
@@ -249,19 +229,14 @@ export default function TeamDetailPage() {
               {filteredMembers.map((member) => (
                 <div
                   key={member.id}
-                  className="grid grid-cols-[48px_1fr_120px_48px] items-center px-4 py-3"
-                  style={{
-                    backgroundColor: "#1e2127",
-                    borderBottom: "1px solid #333b45",
-                  }}
+                  className="grid grid-cols-[48px_1fr_120px_48px] items-center px-4 py-3 border-b border-(--color-border-primary) last:border-0 hover:bg-(--color-card-bg)/80 transition-colors"
                 >
                   {/* Avatar */}
                   <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium"
-                    style={{ backgroundColor: member.user.profile.avatar ? 'transparent' : '#333b45', color: '#94a3b8' }}
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-(--color-input-bg) text-(--color-text-muted) overflow-hidden"
                   >
                     {member.user.profile.avatar ? (
-                      <Image src={member.user.profile.avatar} alt={member.user.profile.nickname} width={32} height={32} className="rounded-full" />
+                      <Image src={member.user.profile.avatar} alt={member.user.profile.nickname} width={32} height={32} />
                     ) : (
                       member.user.profile.nickname.charAt(0).toUpperCase()
                     )}
@@ -269,235 +244,155 @@ export default function TeamDetailPage() {
 
                   {/* Name + Email */}
                   <div>
-                    <p className="font-medium text-slate-200 text-sm leading-normal">
+                    <p className="text-sm font-medium text-(--color-text-primary)">
                       {member.user.profile.nickname}
                     </p>
-                    <p className="font-medium text-slate-500 text-xs leading-normal">
+                    <p className="text-xs text-(--color-text-muted)">
                       {member.user.email}
                     </p>
                   </div>
 
                   {/* Role Badge */}
-                  <div className="flex items-center gap-1">
-                    <span
-                      className="px-3 py-1 rounded text-xs font-medium cursor-pointer"
-                      style={{
-                        backgroundColor: "#333b45",
-                        color: member.role === 0 ? "#e2e8f0" : "#94a3b8",
-                      }}
+                  <div>
+                    <button
+                      className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                        member.role === 0 
+                          ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' 
+                          : 'bg-(--color-input-bg) text-(--color-text-secondary) border border-(--color-input-border) hover:border-(--color-text-muted)'
+                      } ${member.role !== 0 ? 'cursor-pointer' : 'cursor-default'}`}
                       onClick={() => member.role !== 0 && handleUpdateRole(member.user.id, member.role === 1 ? 2 : 1)}
+                      disabled={member.role === 0}
                     >
-                      {member.role === 0 ? 'Owner' : member.role === 1 ? 'Admin' : 'Member'}{" "}
-                      {member.role !== 0 && (
-                        <span className="text-slate-500">&#9662;</span>
-                      )}
-                    </span>
+                      {member.role === 0 ? 'Owner' : member.role === 1 ? 'Admin' : 'Member'}
+                      {member.role !== 0 && <ChevronDown size={12} />}
+                    </button>
                   </div>
 
                   {/* Action Icon */}
                   <div className="flex justify-center">
                     {member.role !== 0 && (
-                      <button onClick={() => handleRemoveMember(member.user.id)}>
-                        <Image
-                          src="/icons/action/user-remove.svg"
-                          alt="Remove"
-                          width={16}
-                          height={16}
-                          className="opacity-60 hover:opacity-100 cursor-pointer transition-opacity"
-                        />
+                      <button 
+                        onClick={() => handleRemoveMember(member.user.id)}
+                        className="text-(--color-text-muted) hover:text-(--color-status-danger) transition-colors p-1"
+                      >
+                        <UserX size={16} />
                       </button>
                     )}
                   </div>
                 </div>
               ))}
 
-              {/* Empty rows to fill space */}
-              {filteredMembers.length < 6 &&
-                Array.from({ length: 6 - filteredMembers.length }).map(
-                  (_, i) => (
-                    <div
-                      key={`empty-${i}`}
-                      className="px-4 py-5"
-                      style={{
-                        backgroundColor: "#1e2127",
-                        borderBottom: "1px solid #333b45",
-                      }}
-                    />
-                  ),
-                )}
+              {/* Empty rows to fill space if needed */}
+              {filteredMembers.length === 0 && (
+                <div className="p-8 text-center text-(--color-text-muted)">
+                  No members found matching your search.
+                </div>
+              )}
             </div>
           </div>
 
           {/* Right: Team Settings Panel */}
-          <div
-            className="w-[280px] rounded-lg p-5 flex-shrink-0 self-start"
-            style={{
-              backgroundColor: "#1e2127",
-              border: "1px solid #333b45",
-            }}
-          >
-            <h3 className="font-semibold text-slate-200 text-sm leading-normal mb-4">
+          <div className="w-full lg:w-[320px] bg-(--color-card-bg) border border-(--color-border-primary) rounded-lg p-5 flex-shrink-0 self-start h-fit">
+            <h3 className="font-semibold text-(--color-text-primary) mb-4">
               Team Settings
             </h3>
 
             {/* Team Name */}
-            <label className="font-medium text-slate-500 text-xs leading-normal block mb-2">
-              Team Name
-            </label>
-            <input
-              type="text"
-              value={teamName}
-              onChange={(e) => setTeamName(e.target.value)}
-              className="w-full h-8 rounded-md px-3 text-xs outline-none mb-3"
-              style={{
-                backgroundColor: "var(--input-bg)",
-                border: "1px solid var(--input-border)",
-                color: "var(--text-light)",
-              }}
-            />
-            <button
-              onClick={handleSaveName}
-              disabled={isSaving}
-              className="w-full py-2 rounded-md text-xs font-medium transition-opacity hover:opacity-90 mb-5 disabled:opacity-50"
-              style={{
-                backgroundColor: "#333b45",
-                color: "#e2e8f0",
-              }}
-            >
-              {isSaving ? 'Saving...' : 'Save Name'}
-            </button>
+            <div className="mb-6">
+              <TextInput
+                label="Team Name"
+                value={teamName}
+                onChange={(e) => setTeamName(e.target.value)}
+              />
+              <Button
+                onClick={handleSaveName}
+                disabled={isSaving}
+                size="sm"
+                variant="secondary"
+                className="w-full mt-3"
+              >
+                {isSaving ? 'Saving...' : 'Save Name'}
+              </Button>
+            </div>
 
             {/* Invite Code */}
-            <p className="font-medium text-slate-500 text-xs leading-normal mb-3">
-              Generate a unique invite code to share with new members. They can
-              use this code to join the team.
-            </p>
-            <div className="flex items-center gap-2 mb-3">
-              <button
-                onClick={handleCopyInviteCode}
-                disabled={!team.inviteCode}
-                className="flex-1 py-2 rounded-md text-xs font-medium flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-50"
-                style={{
-                  backgroundColor: "#333b45",
-                  color: "#e2e8f0",
-                }}
-              >
-                Copy Code
-                <Image
-                  src="/icons/action/copy.svg"
-                  alt="Copy"
-                  width={14}
-                  height={14}
-                />
-              </button>
+            <div className="mb-6 pb-6 border-b border-(--color-border-primary)">
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-(--color-text-secondary)">Invite Code</label>
+                <p className="text-xs text-(--color-text-muted) mb-2">
+                  Share this code with new members to join the team.
+                </p>
+                <div className="flex gap-2">
+                  <div className="flex-1 px-3 py-2 bg-(--color-input-bg) border border-(--color-input-border) rounded-md text-sm text-center font-mono text-(--color-text-primary)">
+                    {team.inviteCode || 'No code'}
+                  </div>
+                  <Button
+                    onClick={handleCopyInviteCode}
+                    disabled={!team.inviteCode}
+                    variant="secondary"
+                    size="sm"
+                    className="px-3"
+                  >
+                    <Copy size={16} />
+                  </Button>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full mt-2 text-xs"
+                >
+                  <RefreshCw size={12} className="mr-1" /> Generate New Code
+                </Button>
+              </div>
             </div>
-
-            <div
-              className="w-full py-3 rounded-md text-center text-lg font-bold tracking-widest mb-3"
-              style={{
-                backgroundColor: "var(--input-bg)",
-                border: "1px solid var(--input-border)",
-                color: "var(--text-light)",
-              }}
-            >
-              {team.inviteCode || 'No code'}
-            </div>
-
-            <button
-              className="w-full py-2 rounded-md text-xs font-medium transition-opacity hover:opacity-90 mb-6"
-              style={{
-                backgroundColor: "#333b45",
-                color: "#e2e8f0",
-              }}
-            >
-              Generate New Code
-            </button>
 
             {/* Disband Section */}
-            <div className="pt-4" style={{ borderTop: "1px solid #333b45" }}>
-              <h4 className="font-semibold text-slate-200 text-sm leading-normal mb-1">
-                Team Settings{" "}
-                <span className="font-normal text-slate-500 text-xs">
-                  (owner only)
-                </span>
+            <div>
+              <h4 className="font-medium text-(--color-text-primary) text-sm mb-1">
+                Danger Zone
               </h4>
-              <p className="font-medium text-slate-500 text-xs leading-normal mb-1">
-                Disbanding a team will remove all members and the team.
+              <p className="text-xs text-(--color-text-muted) mb-3">
+                This action cannot be undone.
               </p>
-              <p className="font-medium text-red-400 text-xs leading-normal mb-3">
-                This action is irreversible.
-              </p>
-              <button
+              <Button
                 onClick={handleDeleteTeam}
-                className="w-full py-2 rounded-md text-xs font-medium transition-opacity hover:opacity-90"
-                style={{
-                  backgroundColor: "#7f1d1d",
-                  color: "#fca5a5",
-                  border: "1px solid #991b1b",
-                }}
+                variant="danger"
+                size="sm"
+                className="w-full"
               >
                 Disband Team
-              </button>
+              </Button>
             </div>
           </div>
         </div>
       ) : activeTab === "projects" ? (
         <div>
           {/* Projects Header */}
-          <div className="flex items-center justify-between mb-4">
-            <p className="font-medium text-slate-500 text-sm leading-normal">
+          <div className="flex items-center justify-between mb-6">
+            <p className="text-(--color-text-secondary)">
               Manage projects within this team.
             </p>
-            <button
-              onClick={handleCreateProject}
-              disabled={isCreatingProject}
-              className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
-              style={{
-                backgroundColor: "var(--accent-blue)",
-                color: "#e2e8f0",
-              }}
-            >
-              <Image
-                src="/icons/action/plus.svg"
-                alt="Add"
-                width={16}
-                height={16}
-              />
+            <Button onClick={handleCreateProject} disabled={isCreatingProject} size="sm">
+              <Plus size={16} />
               {isCreatingProject ? "Creating..." : "New Project"}
-            </button>
+            </Button>
           </div>
 
           {/* Projects Grid */}
           {projects.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20">
-              <Image
-                src="/icons/navigation/project.svg"
-                alt="No projects"
-                width={60}
-                height={60}
-                className="opacity-50 mb-4"
-              />
-              <p className="text-slate-400 text-lg font-medium mb-2">No Projects Yet</p>
-              <p className="text-slate-500 text-sm">Create your first project to get started</p>
+            <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-(--color-border-primary) rounded-xl bg-(--color-card-bg)/30">
+              <Box size={48} className="text-(--color-text-muted) mb-4 opacity-50" />
+              <p className="text-lg font-medium text-(--color-text-secondary) mb-2">No Projects Yet</p>
+              <p className="text-sm text-(--color-text-muted)">Create your first project to get started</p>
             </div>
           ) : (
-            <div className="grid grid-cols-4 gap-x-5 gap-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {projects.map((project) => (
                 <article
                   key={project.id}
-                  className="rounded-xl overflow-hidden"
-                  style={{
-                    backgroundColor: "#1e2127",
-                    border: "1px solid #333b45",
-                  }}
+                  className="bg-(--color-card-bg) border border-(--color-card-border) rounded-xl overflow-hidden hover:border-(--color-accent-blue) transition-colors"
                 >
-                  <div
-                    className="relative h-[120px] flex items-center justify-center"
-                    style={{
-                      backgroundColor: "#12141b",
-                      borderBottom: "1px solid #333b45",
-                    }}
-                  >
+                  <div className="relative h-[120px] bg-[#12141b] flex items-center justify-center border-b border-(--color-card-border)">
                     <Image
                       src="/icons/brand/cube-preview.svg"
                       alt="Project"
@@ -505,34 +400,27 @@ export default function TeamDetailPage() {
                       height={80}
                     />
                   </div>
-                  <div className="px-4 pt-3 pb-4">
-                    <h4 className="font-semibold text-slate-200 text-sm leading-normal mb-1">
+                  <div className="p-4">
+                    <h4 className="font-semibold text-(--color-text-primary) mb-1">
                       {project.name}
                     </h4>
-                    <span className="font-medium text-slate-500 text-xs leading-normal">
+                    <span className="text-xs text-(--color-text-muted)">
                       {project.members.length} member{project.members.length !== 1 ? 's' : ''}
                     </span>
                     <div className="flex gap-2 mt-4">
-                      <Link
-                        href={`/dashboard/projects/${project.id}`}
-                        className="flex-1 py-2 rounded-md text-center text-xs font-medium transition-opacity hover:opacity-90"
-                        style={{
-                          backgroundColor: "#333b45",
-                          color: "#e2e8f0",
-                        }}
-                      >
-                        Open
+                      <Link href={`/dashboard/projects/${project.id}`} className="flex-1">
+                        <Button variant="secondary" size="sm" className="w-full">
+                          Open
+                        </Button>
                       </Link>
-                      <button
+                      <Button
                         onClick={() => handleDeleteProject(project.id)}
-                        className="px-3 py-2 rounded-md text-xs font-medium transition-opacity hover:opacity-90"
-                        style={{
-                          backgroundColor: "#7f1d1d",
-                          color: "#fca5a5",
-                        }}
+                        variant="danger"
+                        size="sm"
+                        className="px-3"
                       >
-                        Delete
-                      </button>
+                        <Trash2 size={16} />
+                      </Button>
                     </div>
                   </div>
                 </article>
@@ -541,8 +429,9 @@ export default function TeamDetailPage() {
           )}
         </div>
       ) : (
-        <div className="flex items-center justify-center h-64">
-          <p className="text-slate-500 text-sm">Chat feature coming soon.</p>
+        <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-(--color-border-primary) rounded-xl bg-(--color-card-bg)/30">
+          <p className="text-(--color-text-secondary) font-medium">Chat feature coming soon.</p>
+          <p className="text-(--color-text-muted) text-sm mt-1">Communicate with your team in real-time.</p>
         </div>
       )}
     </div>

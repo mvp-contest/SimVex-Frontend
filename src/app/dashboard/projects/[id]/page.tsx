@@ -4,15 +4,17 @@ import { useState, useEffect, Suspense } from "react";
 import { useParams } from "next/navigation";
 import { projects as projectsApi, memos as memosApi, chats as chatsApi, ai as aiApi, type Project, type Memo, type Chat, type ChatMessage } from "@/lib/api";
 import { useAuth } from "@/app/context/AuthContext";
-import { Maximize2, Bot } from "lucide-react";
+import { Maximize2, Bot, Upload, X, Trash2, Send } from "lucide-react";
 import dynamic from "next/dynamic";
 import FileUpload from "@/app/components/FileUpload";
+import Button from "@/components/ui/Button";
+import TextArea from "@/components/ui/TextArea";
 
 const ThreeViewer = dynamic(() => import("@/app/components/ThreeViewer"), {
   ssr: false,
   loading: () => (
     <div className="flex items-center justify-center h-full">
-      <p className="text-slate-400">Loading 3D Viewer...</p>
+      <p className="text-(--color-text-muted)">Loading 3D Viewer...</p>
     </div>
   ),
 });
@@ -256,69 +258,68 @@ export default function ProjectDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-slate-400">Loading project...</p>
+        <p className="text-(--color-text-muted)">Loading project...</p>
       </div>
     );
   }
 
   if (error || !project) {
     return (
-      <div className="p-4 bg-red-900/20 border border-red-500 rounded-md">
-        <p className="text-red-400">{error || "Project not found"}</p>
+      <div className="p-4 bg-(--color-status-danger-bg) border border-(--color-status-danger-border) rounded-md">
+        <p className="text-(--color-status-danger)">{error || "Project not found"}</p>
       </div>
     );
   }
 
-
   return (
-    <div className="h-[calc(100vh-60px)] flex flex-col">
+    <div className="h-full flex flex-col bg-(--color-page-bg)">
       {/* Top Bar */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-[#333b45]">
+      <div className="flex items-center justify-between px-6 py-3 border-b border-(--color-border-primary) bg-(--color-header-bg) shrink-0">
         <input
           type="text"
           value={projectName}
           onChange={(e) => setProjectName(e.target.value)}
           onBlur={handleSaveProjectName}
-          className="text-lg font-medium text-slate-200 bg-transparent border-none outline-none"
+          className="text-lg font-medium text-(--color-text-primary) bg-transparent border-none outline-none focus:ring-1 focus:ring-(--color-accent-blue) rounded px-2"
         />
-        <button className="px-4 py-1.5 rounded-md bg-[#4a9eff] text-white text-sm font-medium hover:opacity-90 transition-opacity">
-          Save
-        </button>
+        <Button size="sm">
+          Save Changes
+        </Button>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left: 3D Viewer + Notes */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           {/* 3D Viewer */}
-          <div className="flex-1 bg-[#1e2127] m-4 rounded-lg border border-[#333b45] relative overflow-hidden">
+          <div className="flex-1 bg-(--color-card-bg) m-4 rounded-lg border border-(--color-border-primary) relative overflow-hidden flex flex-col">
             {showUpload && modelFiles.length === 0 ? (
-              <div className="absolute inset-0 flex items-center justify-center p-8">
+              <div className="absolute inset-0 flex items-center justify-center p-8 z-10">
                 <div className="w-full max-w-md">
                   <FileUpload onFileSelect={handleFileSelect} />
                 </div>
               </div>
             ) : (
-              <Suspense fallback={
-                <div className="flex items-center justify-center h-full">
-                  <p className="text-slate-400">Loading 3D Viewer...</p>
-                </div>
-              }>
-                <ThreeViewer 
-                  models={modelFiles}
-                />
-              </Suspense>
+              <div className="flex-1 relative">
+                <Suspense fallback={
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-(--color-text-muted)">Loading 3D Viewer...</p>
+                  </div>
+                }>
+                  <ThreeViewer models={modelFiles} />
+                </Suspense>
+              </div>
             )}
             
-            {/* File List - Bottom Left */}
+            {/* File List - Bottom Left Overlay */}
             {modelFiles.length > 0 && (
-              <div className="absolute bottom-4 left-4 max-w-xs">
-                <div className="bg-[#12141b] border border-[#333b45] rounded-lg p-3 max-h-48 overflow-y-auto">
+              <div className="absolute bottom-4 left-4 max-w-xs z-20">
+                <div className="bg-[#12141b]/90 border border-(--color-border-primary) rounded-lg p-3 max-h-48 overflow-y-auto shadow-lg backdrop-blur-sm">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-slate-300 text-xs font-semibold">Models ({modelFiles.length})</h4>
+                    <h4 className="text-(--color-text-light) text-xs font-semibold">Models ({modelFiles.length})</h4>
                     <button
                       onClick={handleRemoveAllModels}
-                      className="text-slate-500 hover:text-red-400 text-xs"
+                      className="text-(--color-text-muted) hover:text-(--color-status-danger) text-xs transition-colors"
                       title="Remove all models"
                     >
                       Clear All
@@ -330,26 +331,24 @@ export default function ProjectDetailPage() {
                         key={model.id}
                         className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${
                           index === currentModelIndex
-                            ? 'bg-[#4a9eff]/20 border border-[#4a9eff]/50'
-                            : 'bg-[#1e2127] hover:bg-[#1e2127]/80'
+                            ? 'bg-(--color-accent-blue)/20 border border-(--color-accent-blue)/50'
+                            : 'hover:bg-(--color-input-bg)'
                         }`}
                         onClick={() => setCurrentModelIndex(index)}
                       >
                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <div className="w-2 h-2 rounded-full bg-[#4a9eff] flex-shrink-0" />
-                          <span className="text-slate-300 text-xs truncate">{model.name}</span>
+                          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${index === currentModelIndex ? 'bg-(--color-accent-blue)' : 'bg-(--color-text-muted)'}`} />
+                          <span className="text-(--color-text-light) text-xs truncate">{model.name}</span>
                         </div>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleRemoveModel(index);
                           }}
-                          className="text-slate-500 hover:text-red-400 ml-2 flex-shrink-0"
+                          className="text-(--color-text-muted) hover:text-(--color-status-danger) ml-2 flex-shrink-0"
                           title="Remove"
                         >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
+                          <X size={14} />
                         </button>
                       </div>
                     ))}
@@ -359,76 +358,82 @@ export default function ProjectDetailPage() {
             )}
             
             {/* 3D Viewer Controls - Top Right */}
-            <div className="absolute top-4 right-4 flex flex-col gap-2">
+            <div className="absolute top-4 right-4 flex flex-col gap-2 z-20">
               <button 
                 onClick={() => setShowUpload(!showUpload)}
-                className="p-2 rounded bg-[#12141b] border border-[#333b45] hover:bg-[#1e2127] transition-colors"
+                className="p-2 rounded bg-[#12141b]/90 border border-(--color-border-primary) hover:bg-(--color-input-bg) transition-colors text-(--color-text-muted) hover:text-(--color-text-light)"
                 title="Upload new model"
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-slate-400">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                </svg>
+                <Upload size={18} />
               </button>
-              <button className="p-2 rounded bg-[#12141b] border border-[#333b45] hover:bg-[#1e2127] transition-colors">
-                <Maximize2 size={18} className="text-slate-400" />
+              <button className="p-2 rounded bg-[#12141b]/90 border border-(--color-border-primary) hover:bg-(--color-input-bg) transition-colors text-(--color-text-muted) hover:text-(--color-text-light)">
+                <Maximize2 size={18} />
               </button>
             </div>
             
             {/* Upload overlay when showUpload is true but files exist */}
             {showUpload && modelFiles.length > 0 && (
-              <div className="absolute inset-0 bg-[#1e2127]/95 flex items-center justify-center p-8 z-10">
-                <div className="w-full max-w-md">
+              <div className="absolute inset-0 bg-[#1e2127]/95 flex items-center justify-center p-8 z-30">
+                <div className="w-full max-w-md bg-(--color-card-bg) p-6 rounded-lg border border-(--color-border-primary)">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-medium text-(--color-text-primary)">Add Model</h3>
+                    <button onClick={() => setShowUpload(false)} className="text-(--color-text-muted) hover:text-(--color-text-primary)">
+                      <X size={20} />
+                    </button>
+                  </div>
                   <FileUpload onFileSelect={handleFileSelect} />
-                  <button
+                  <Button
                     onClick={() => setShowUpload(false)}
-                    className="mt-4 w-full px-4 py-2 rounded-md bg-[#333b45] text-slate-300 text-sm font-medium hover:bg-[#3f4651] transition-colors"
+                    variant="secondary"
+                    className="mt-4 w-full"
                   >
                     Cancel
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Notes */}
-          <div className="mx-4 mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-slate-200 font-semibold text-sm">Notes</h3>
-              <button
+          {/* Notes Section */}
+          <div className="mx-4 mb-4 bg-(--color-card-bg) border border-(--color-border-primary) rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-(--color-text-primary) font-semibold text-sm">Project Notes</h3>
+              <Button
                 onClick={handleSaveMemo}
                 disabled={savingMemo}
-                className="px-3 py-1 rounded-md bg-[#4a9eff] text-white text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                size="sm"
+                className="h-7 text-xs"
               >
                 {savingMemo ? "Saving..." : "Save Note"}
-              </button>
+              </Button>
             </div>
-            <textarea
+            <TextArea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add notes..."
-              className="w-full h-24 px-4 py-3 rounded-lg bg-[#1e2127] border border-[#333b45] text-slate-300 text-sm outline-none resize-none placeholder:text-slate-500"
+              placeholder="Add project notes here..."
+              className="min-h-[100px] text-sm"
             />
           </div>
         </div>
 
         {/* Right: AI Assistant + Project Chat */}
-        <div className="w-[320px] flex flex-col border-l border-[#333b45]">
+        <div className="w-[320px] flex flex-col border-l border-(--color-border-primary) bg-(--color-sidebar-bg)">
           {/* AI Assistant */}
-          <div className="flex-1 flex flex-col p-4 border-b border-[#333b45]">
+          <div className="flex-1 flex flex-col p-4 border-b border-(--color-border-primary) min-h-0">
             <div className="flex items-center gap-2 mb-3">
-              <Bot size={18} className="text-slate-400" />
-              <h3 className="text-slate-200 font-semibold text-sm">AI Assistant</h3>
+              <Bot size={18} className="text-(--color-accent-blue)" />
+              <h3 className="text-(--color-text-primary) font-semibold text-sm">AI Assistant</h3>
             </div>
             
             {/* AI Chat Messages */}
-            <div className="flex-1 overflow-y-auto mb-3 space-y-3">
+            <div className="flex-1 overflow-y-auto mb-3 space-y-3 pr-1 custom-scrollbar">
               {aiMessages.length === 0 ? (
-                <div className="p-3 rounded-lg bg-[#1e2127] border border-[#333b45]">
+                <div className="p-3 rounded-lg bg-(--color-input-bg) border border-(--color-border-primary)">
                   <div className="flex items-center gap-2 mb-2">
-                    <Bot size={16} className="text-[#4a9eff]" />
-                    <span className="text-slate-300 text-xs font-medium">SIMVEX AI Coach</span>
+                    <Bot size={16} className="text-(--color-accent-blue)" />
+                    <span className="text-(--color-text-light) text-xs font-medium">SIMVEX AI Coach</span>
                   </div>
-                  <p className="text-slate-400 text-xs leading-relaxed">
+                  <p className="text-(--color-text-muted) text-xs leading-relaxed">
                     Hello! I&apos;m your AI assistant. Ask me anything about 3D modeling, project management, or how to use SIMVEX.
                   </p>
                 </div>
@@ -436,38 +441,38 @@ export default function ProjectDetailPage() {
                 aiMessages.map((msg) => (
                   <div key={msg.id} className={`p-3 rounded-lg ${
                     msg.role === 'assistant' 
-                      ? 'bg-[#1e2127] border border-[#333b45]' 
-                      : 'bg-[#4a9eff]/10 border border-[#4a9eff]/30'
+                      ? 'bg-(--color-input-bg) border border-(--color-border-primary)' 
+                      : 'bg-(--color-accent-blue)/10 border border-(--color-accent-blue)/30'
                   }`}>
                     <div className="flex items-center gap-2 mb-2">
                       {msg.role === 'assistant' ? (
                         <>
-                          <Bot size={14} className="text-[#4a9eff]" />
-                          <span className="text-slate-300 text-xs font-medium">AI Coach</span>
+                          <Bot size={14} className="text-(--color-accent-blue)" />
+                          <span className="text-(--color-text-light) text-xs font-medium">AI Coach</span>
                         </>
                       ) : (
                         <>
-                          <div className="w-4 h-4 rounded-full bg-[#4a9eff] flex items-center justify-center text-white text-[10px] font-medium">
+                          <div className="w-4 h-4 rounded-full bg-(--color-accent-blue) flex items-center justify-center text-white text-[10px] font-medium">
                             U
                           </div>
-                          <span className="text-slate-300 text-xs font-medium">You</span>
+                          <span className="text-(--color-text-light) text-xs font-medium">You</span>
                         </>
                       )}
-                      <span className="text-slate-500 text-[10px] ml-auto">
+                      <span className="text-(--color-text-muted) text-[10px] ml-auto">
                         {msg.timestamp.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                       </span>
                     </div>
-                    <p className="text-slate-400 text-xs leading-relaxed">
+                    <p className="text-(--color-text-secondary) text-xs leading-relaxed whitespace-pre-wrap">
                       {msg.content}
                     </p>
                   </div>
                 ))
               )}
               {aiLoading && (
-                <div className="p-3 rounded-lg bg-[#1e2127] border border-[#333b45]">
+                <div className="p-3 rounded-lg bg-(--color-input-bg) border border-(--color-border-primary)">
                   <div className="flex items-center gap-2">
-                    <Bot size={14} className="text-[#4a9eff] animate-pulse" />
-                    <span className="text-slate-400 text-xs">AI is thinking...</span>
+                    <Bot size={14} className="text-(--color-accent-blue) animate-pulse" />
+                    <span className="text-(--color-text-muted) text-xs">AI is thinking...</span>
                   </div>
                 </div>
               )}
@@ -480,45 +485,50 @@ export default function ProjectDetailPage() {
                   value={aiQuestion}
                   onChange={(e) => setAiQuestion(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSendAiQuestion()}
-                  placeholder="Ask any questions here..."
-                  className="flex-1 px-3 py-2 rounded-md bg-[#12141b] border border-[#333b45] text-slate-300 text-xs outline-none placeholder:text-slate-500"
+                  placeholder="Ask AI..."
+                  className="flex-1 px-3 py-2 rounded-md bg-(--color-input-bg) border border-(--color-input-border) text-(--color-text-primary) text-xs outline-none placeholder:text-(--color-text-muted) focus:border-(--color-accent-blue)"
                 />
-                <button
+                <Button
                   onClick={handleSendAiQuestion}
-                  className="px-4 py-2 rounded-md bg-[#4a9eff] text-white text-xs font-medium hover:opacity-90 transition-opacity"
+                  size="sm"
+                  className="px-3"
+                  disabled={!aiQuestion.trim() || aiLoading}
                 >
-                  Send
-                </button>
+                  <Send size={14} />
+                </Button>
               </div>
             </div>
           </div>
 
           {/* Project Chat */}
-          <div className="flex-1 flex flex-col p-4">
-            <h3 className="text-slate-200 font-semibold text-sm mb-3">Project Chat</h3>
+          <div className="flex-1 flex flex-col p-4 min-h-0">
+            <h3 className="text-(--color-text-primary) font-semibold text-sm mb-3">Project Chat</h3>
             
             {/* Chat Messages */}
-            <div className="flex-1 overflow-y-auto mb-3 space-y-3">
+            <div className="flex-1 overflow-y-auto mb-3 space-y-3 pr-1 custom-scrollbar">
               {loadingChat ? (
-                <p className="text-slate-500 text-xs text-center">Loading chat...</p>
+                <div className="flex justify-center items-center h-full">
+                  <p className="text-(--color-text-muted) text-xs">Loading chat...</p>
+                </div>
               ) : chatMessages.length === 0 ? (
-                <p className="text-slate-500 text-xs text-center">No messages yet</p>
+                <div className="flex flex-col justify-center items-center h-full text-(--color-text-muted)">
+                  <p className="text-xs">No messages yet</p>
+                </div>
               ) : (
                 chatMessages.map((msg) => (
-                  <div key={msg.id}>
+                  <div key={msg.id} className="group">
                     <div className="flex items-center gap-2 mb-1">
                       <div 
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium"
-                        style={{ backgroundColor: '#4a9eff' }}
+                        className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium bg-(--color-accent-blue)"
                       >
                         U
                       </div>
-                      <span className="text-slate-300 text-xs font-medium">User</span>
-                      <span className="text-slate-500 text-xs">
+                      <span className="text-(--color-text-light) text-xs font-medium">User</span>
+                      <span className="text-(--color-text-muted) text-[10px]">
                         {new Date(msg.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                       </span>
                     </div>
-                    <p className="text-slate-400 text-xs leading-relaxed ml-8">
+                    <p className="text-(--color-text-secondary) text-xs leading-relaxed ml-8">
                       {msg.isDeleted ? "(deleted)" : msg.content}
                     </p>
                   </div>
@@ -534,14 +544,16 @@ export default function ProjectDetailPage() {
                 onChange={(e) => setNewChatMessage(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSendChatMessage()}
                 placeholder="Type a message..."
-                className="flex-1 px-3 py-2 rounded-md bg-[#12141b] border border-[#333b45] text-slate-300 text-xs outline-none placeholder:text-slate-500"
+                className="flex-1 px-3 py-2 rounded-md bg-(--color-input-bg) border border-(--color-input-border) text-(--color-text-primary) text-xs outline-none placeholder:text-(--color-text-muted) focus:border-(--color-accent-blue)"
               />
-              <button
+              <Button
                 onClick={handleSendChatMessage}
-                className="px-4 py-2 rounded-md bg-[#4a9eff] text-white text-xs font-medium hover:opacity-90 transition-opacity"
+                size="sm"
+                className="px-3"
+                disabled={!newChatMessage.trim()}
               >
-                Send
-              </button>
+                <Send size={14} />
+              </Button>
             </div>
           </div>
         </div>
