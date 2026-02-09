@@ -1,43 +1,57 @@
+@import "pretendard/dist/web/variable/pretendardvariable.css";
 @import "tailwindcss";
 
 :root {
   --background: #14171c;
   --foreground: #ffffff;
+  --page-bg: #14171C;
   --card-bg: #1e2127;
   --card-border: #333b45;
   --input-bg: #0b0c0e;
   --input-border: #333b45;
+  --text-primary: #E2E8F0;
+  --text-secondary: #787878;
   --text-muted: #64748b;
   --text-light: #e2e8f0;
+  --accent-white: #F8FAFC;
   --button-bg: #f8fafc;
   --button-text: #14171c;
   --accent-blue: #3b82f6;
   --header-bg: #0b0c0e;
   --sidebar-bg: #14171c;
   --sidebar-border: #1e2127;
+  --border-primary: #333B45;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-page-bg: var(--page-bg);
   --color-card-bg: var(--card-bg);
   --color-card-border: var(--card-border);
   --color-input-bg: var(--input-bg);
   --color-input-border: var(--input-border);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
   --color-text-muted: var(--text-muted);
   --color-text-light: var(--text-light);
+  --color-accent-white: var(--accent-white);
   --color-button-bg: var(--button-bg);
   --color-button-text: var(--button-text);
   --color-accent-blue: var(--accent-blue);
   --color-header-bg: var(--header-bg);
   --color-sidebar-bg: var(--sidebar-bg);
   --color-sidebar-border: var(--sidebar-border);
+  --color-border-primary: var(--border-primary);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-pretendard: "Pretendard Variable", -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  body {
+    background: var(--page-bg);
+    color: var(--foreground);
+    font-family: var(--font-pretendard);
+  }
 }
