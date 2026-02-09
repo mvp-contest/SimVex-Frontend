@@ -1,12 +1,13 @@
 "use client";
 
-import { useRef, useEffect, useState } from 'react';
-import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber';
+import { useRef, useEffect, useState, type MutableRefObject } from 'react';
+import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Grid, PerspectiveCamera, TransformControls, Outlines } from '@react-three/drei';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
+import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 interface ModelData {
   id: string;
@@ -19,37 +20,39 @@ interface ThreeViewerProps {
   models: ModelData[];
 }
 
-function Model({ url, type, position, isSelected, onClick, meshRef }: { 
-  url: string; 
+interface ModelProps {
+  url: string;
   type: 'gltf' | 'obj' | 'stl';
   position: [number, number, number];
   isSelected: boolean;
   onClick: () => void;
-  meshRef: any;
-}) {
-  const [model, setModel] = useState<any>(null);
+  meshRef: MutableRefObject<THREE.Group | null>;
+}
+
+function Model({ url, type, position, isSelected, onClick, meshRef }: ModelProps) {
+  const [model, setModel] = useState<THREE.Object3D | THREE.Mesh | null>(null);
   const [hovered, setHovered] = useState(false);
 
   useEffect(() => {
-    let loader: any;
+    let loader: GLTFLoader | OBJLoader | STLLoader;
     
     switch (type) {
       case 'gltf':
         loader = new GLTFLoader();
         loader.load(
           url,
-          (gltf: any) => setModel(gltf.scene),
+          (gltf: GLTF) => setModel(gltf.scene),
           undefined,
-          (error: any) => console.error('Error loading GLTF:', error)
+          (error: unknown) => console.error('Error loading GLTF:', error)
         );
         break;
       case 'obj':
         loader = new OBJLoader();
         loader.load(
           url,
-          (obj: any) => setModel(obj),
+          (obj: THREE.Group) => setModel(obj),
           undefined,
-          (error: any) => console.error('Error loading OBJ:', error)
+          (error: unknown) => console.error('Error loading OBJ:', error)
         );
         break;
       case 'stl':
@@ -57,7 +60,7 @@ function Model({ url, type, position, isSelected, onClick, meshRef }: {
         loader.load(
           url,
           (geometry: THREE.BufferGeometry) => {
-            const material = new THREE.MeshStandardMaterial({ 
+            const material = new THREE.MeshStandardMaterial({
               color: isSelected ? 0x4a9eff : 0x888888,
               metalness: 0.3,
               roughness: 0.4
@@ -66,7 +69,7 @@ function Model({ url, type, position, isSelected, onClick, meshRef }: {
             setModel(mesh);
           },
           undefined,
-          (error: any) => console.error('Error loading STL:', error)
+          (error: unknown) => console.error('Error loading STL:', error)
         );
         break;
     }
@@ -104,27 +107,30 @@ function Model({ url, type, position, isSelected, onClick, meshRef }: {
   );
 }
 
-function SceneControls({ selectedModel, models, onDeselect, modelRefs }: {
+interface SceneControlsProps {
   selectedModel: string | null;
-  models: ModelData[];
   onDeselect: () => void;
-  modelRefs: Record<string, any>;
-}) {
+  modelRefsRef: MutableRefObject<Record<string, MutableRefObject<THREE.Group | null>>>;
+}
+
+function SceneControls({ selectedModel, onDeselect, modelRefsRef }: SceneControlsProps) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const orbitRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const transformRef = useRef<any>(null);
   const [mode, setMode] = useState<'translate' | 'rotate' | 'scale'>('translate');
 
-  const selectedMeshRef = selectedModel ? modelRefs[selectedModel] : null;
+  const selectedMeshRef = selectedModel ? modelRefsRef.current[selectedModel] : null;
 
   useEffect(() => {
     if (transformRef.current && orbitRef.current) {
       const controls = transformRef.current;
       const orbit = orbitRef.current;
-      
-      const callback = (event: any) => {
+
+      const callback = (event: { value: boolean; target: unknown }) => {
         orbit.enabled = !event.value;
       };
-      
+
       controls.addEventListener('dragging-changed', callback);
       return () => controls.removeEventListener('dragging-changed', callback);
     }
@@ -144,7 +150,7 @@ function SceneControls({ selectedModel, models, onDeselect, modelRefs }: {
 
   return (
     <>
-      <OrbitControls 
+      <OrbitControls
         ref={orbitRef}
         enableDamping
         dampingFactor={0.05}
@@ -152,6 +158,7 @@ function SceneControls({ selectedModel, models, onDeselect, modelRefs }: {
         maxDistance={50}
         zoomSpeed={1.5}
       />
+      {/* eslint-disable react-hooks/refs */}
       {selectedModel && selectedMeshRef?.current && (
         <TransformControls
           ref={transformRef}
@@ -159,6 +166,7 @@ function SceneControls({ selectedModel, models, onDeselect, modelRefs }: {
           object={selectedMeshRef.current}
         />
       )}
+      {/* eslint-enable react-hooks/refs */}
     </>
   );
 }
@@ -167,10 +175,12 @@ export default function ThreeViewer({ models }: ThreeViewerProps) {
   const [modelPositions, setModelPositions] = useState<Record<string, [number, number, number]>>({});
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const [showControls, setShowControls] = useState(false);
-  const modelRefs = useRef<Record<string, any>>({});
+  const modelRefs = useRef<Record<string, MutableRefObject<THREE.Group | null>>>({});
 
   useEffect(() => {
     const positions: Record<string, [number, number, number]> = {};
+    const newRefs: Record<string, MutableRefObject<THREE.Group | null>> = {};
+
     models.forEach((model, index) => {
       const angle = (index / models.length) * Math.PI * 2;
       const radius = Math.min(2, models.length * 0.3);
@@ -180,9 +190,13 @@ export default function ThreeViewer({ models }: ThreeViewerProps) {
         Math.sin(angle) * radius
       ];
       if (!modelRefs.current[model.id]) {
-        modelRefs.current[model.id] = { current: null };
+        newRefs[model.id] = { current: null };
+      } else {
+        newRefs[model.id] = modelRefs.current[model.id];
       }
     });
+
+    modelRefs.current = newRefs;
     setModelPositions(positions);
   }, [models]);
 
@@ -198,13 +212,12 @@ export default function ThreeViewer({ models }: ThreeViewerProps) {
         onPointerMissed={() => setSelectedModel(null)}
       >
         <PerspectiveCamera makeDefault position={[8, 8, 8]} fov={60} />
-        <SceneControls 
+        <SceneControls
           selectedModel={selectedModel}
-          models={models}
           onDeselect={() => setSelectedModel(null)}
-          modelRefs={modelRefs.current}
+          modelRefsRef={modelRefs}
         />
-        
+
         {/* Lighting */}
         <ambientLight intensity={0.5} />
         <directionalLight
@@ -232,25 +245,21 @@ export default function ThreeViewer({ models }: ThreeViewerProps) {
         />
         
         {/* Models */}
-        {models.map((model) => {
-          if (!modelRefs.current[model.id]) {
-            modelRefs.current[model.id] = { current: null };
-          }
-          return (
-            <Model
-              key={model.id}
-              url={model.url}
-              type={model.type}
-              position={modelPositions[model.id] || [0, 0, 0]}
-              isSelected={selectedModel === model.id}
-              onClick={() => {
-                console.log('Model clicked:', model.id);
-                setSelectedModel(model.id);
-              }}
-              meshRef={modelRefs.current[model.id]}
-            />
-          );
-        })}
+        {/* eslint-disable-next-line react-hooks/refs */}
+        {models.map((model) => (
+          <Model
+            key={model.id}
+            url={model.url}
+            type={model.type}
+            position={modelPositions[model.id] || [0, 0, 0]}
+            isSelected={selectedModel === model.id}
+            onClick={() => {
+              console.log('Model clicked:', model.id);
+              setSelectedModel(model.id);
+            }}
+            meshRef={modelRefs.current[model.id] || { current: null }}
+          />
+        ))}
         
         {/* Default cube if no models */}
         {models.length === 0 && (

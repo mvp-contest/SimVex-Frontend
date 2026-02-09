@@ -55,17 +55,18 @@ export default function TeamsPage() {
       setNewTeamName("");
       setShowCreateForm(false);
       await loadTeams();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Team creation error:", err);
       console.error("Error details:", JSON.stringify(err, null, 2));
-      
+
+      const error = err as { message?: string };
       let userMessage = "Failed to create team. ";
-      if (err.message?.includes("500") || err.message?.includes("Internal server error")) {
+      if (error.message?.includes("500") || error.message?.includes("Internal server error")) {
         userMessage += "The server encountered an error. Please try again later or contact support.";
       } else {
-        userMessage += err.message || "Unknown error occurred.";
+        userMessage += error.message || "Unknown error occurred.";
       }
-      
+
       setError(userMessage);
       alert(userMessage);
     } finally {

@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useParams } from "next/navigation";
 import { projects as projectsApi, memos as memosApi, chats as chatsApi, ai as aiApi, type Project, type Memo, type Chat, type ChatMessage } from "@/lib/api";
 import { useAuth } from "@/app/context/AuthContext";
-import { Settings, Maximize2, Bot } from "lucide-react";
+import { Maximize2, Bot } from "lucide-react";
 import dynamic from "next/dynamic";
 import FileUpload from "@/app/components/FileUpload";
 
@@ -26,7 +26,7 @@ export default function ProjectDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [projectName, setProjectName] = useState("");
-  const [memos, setMemos] = useState<Memo[]>([]);
+  const [, setMemos] = useState<Memo[]>([]);
   const [currentMemo, setCurrentMemo] = useState<Memo | null>(null);
   const [notes, setNotes] = useState("");
   const [savingMemo, setSavingMemo] = useState(false);
@@ -253,8 +253,6 @@ export default function ProjectDetailPage() {
     setCurrentModelIndex(0);
   };
 
-  const currentModel = modelFiles[currentModelIndex];
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -431,7 +429,7 @@ export default function ProjectDetailPage() {
                     <span className="text-slate-300 text-xs font-medium">SIMVEX AI Coach</span>
                   </div>
                   <p className="text-slate-400 text-xs leading-relaxed">
-                    Hello! I'm your AI assistant. Ask me anything about 3D modeling, project management, or how to use SIMVEX.
+                    Hello! I&apos;m your AI assistant. Ask me anything about 3D modeling, project management, or how to use SIMVEX.
                   </p>
                 </div>
               ) : (

@@ -25,8 +25,8 @@ async function request<T>(
 
   if (!res.ok) {
     const contentType = res.headers.get("content-type");
-    let body: any = {};
-    
+    let body: { message?: string; error?: string; rawError?: string } = {};
+
     if (contentType?.includes("application/json")) {
       body = await res.json().catch(() => ({}));
     } else {

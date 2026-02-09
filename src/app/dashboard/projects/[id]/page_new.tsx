@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { projects as projectsApi, type Project } from "@/lib/api";
-import { Settings, Maximize2, Send, Bot } from "lucide-react";
+import { Settings, Maximize2, Bot } from "lucide-react";
 
 interface ChatMessage {
   id: string;

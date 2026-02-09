@@ -8,7 +8,7 @@ interface FilterDropdownProps {
   onSelect?: (option: string) => void;
 }
 
-export default function FilterDropdown({ label, options = [], onSelect }: FilterDropdownProps) {
+export default function FilterDropdown({ label }: FilterDropdownProps) {
   return (
     <div className="relative">
       <button className="w-[267px] h-[42px] px-4 bg-transparent border-[2px] border-(--color-border-primary) rounded-md text-[20px] font-medium text-(--color-text-primary) flex items-center justify-between hover:border-(--color-accent-white) transition-colors">
