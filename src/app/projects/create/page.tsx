@@ -1,31 +1,76 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/app/context/AuthContext";
+import { projects as projectsApi, teams as teamsApi, type Team } from "@/lib/api";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import TextInput from "@/components/ui/TextInput";
 import TextArea from "@/components/ui/TextArea";
 import Select from "@/components/ui/Select";
-import FileUpload from "@/components/ui/FileUpload";
 import Button from "@/components/ui/Button";
+import FileUpload from "@/app/components/FileUpload";
 
 export default function CreateProjectPage() {
     const router = useRouter();
+    const { user } = useAuth();
     const [formData, setFormData] = useState({
         name: "",
         description: "",
-        team: "",
+        teamId: "",
     });
+    const [teams, setTeams] = useState<Team[]>([]);
+    const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+    const [loading, setLoading] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    useEffect(() => {
+        if (user?.id) {
+            loadTeams();
+        }
+    }, [user?.id]);
+
+    const loadTeams = async () => {
+        if (!user?.id) return;
+        try {
+            const data = await teamsApi.list(user.id);
+            setTeams(data);
+        } catch (err) {
+            console.error("Failed to load teams:", err);
+        }
+    };
+
+    const handleFileSelect = (files: Array<{ file: File; url: string; type: string }>) => {
+        setUploadedFiles(files.map((f) => f.file));
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Handle form submission
-        console.log("Form submitted:", formData);
-        router.push("/dashboard");
+        if (!user?.id || !formData.name || !formData.teamId) {
+            alert("Please fill in all required fields");
+            return;
+        }
+
+        try {
+            setLoading(true);
+
+            const newProject = await projectsApi.create(formData.teamId, formData.name, user.id);
+
+            if (uploadedFiles.length > 0) {
+                await projectsApi.uploadFiles(newProject.id, uploadedFiles);
+            }
+
+            alert("Project created successfully!");
+            router.push(`/dashboard/projects/${newProject.id}`);
+        } catch (err) {
+            console.error("Failed to create project:", err);
+            alert(err instanceof Error ? err.message : "Failed to create project");
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleCancel = () => {
-        router.push("/dashboard");
+        router.push("/dashboard/teams");
     };
 
     return (
@@ -57,28 +102,36 @@ export default function CreateProjectPage() {
 
                         <Select
                             label="Team"
-                            value={formData.team}
-                            onChange={(e) => setFormData({ ...formData, team: e.target.value })}
+                            value={formData.teamId}
+                            onChange={(e) => setFormData({ ...formData, teamId: e.target.value })}
                             options={[
                                 { value: "", label: "Select a team" },
-                                { value: "team1", label: "Team Alpha" },
-                                { value: "team2", label: "Team Beta" },
+                                ...teams.map((team) => ({
+                                    value: team.id,
+                                    label: team.name,
+                                })),
                             ]}
                             required
                         />
 
-                        {/* File Upload */}
                         <div className="pt-4">
-                            <FileUpload onFileSelect={(files) => console.log("Files:", files)} />
+                            <label className="block text-sm font-medium text-(--color-text-primary) mb-2">
+                                Upload Files (GLB, OBJ, STL, meta_data.json)
+                            </label>
+                            <FileUpload onFileSelect={handleFileSelect} />
+                            {uploadedFiles.length > 0 && (
+                                <p className="mt-2 text-sm text-(--color-text-muted)">
+                                    {uploadedFiles.length} file(s) selected
+                                </p>
+                            )}
                         </div>
 
-                        {/* Actions */}
                         <div className="flex justify-end gap-4 pt-6">
                             <Button type="button" variant="secondary" onClick={handleCancel}>
                                 Cancel
                             </Button>
-                            <Button type="submit" variant="primary">
-                                Create
+                            <Button type="submit" variant="primary" disabled={loading}>
+                                {loading ? "Creating..." : "Create Project"}
                             </Button>
                         </div>
                     </form>
