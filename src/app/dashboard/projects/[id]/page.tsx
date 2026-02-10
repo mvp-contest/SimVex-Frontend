@@ -151,24 +151,30 @@ export default function ProjectDetailPage() {
             // Load project files from server
             try {
                 const projectFiles = await projectsApi.getFiles(projectId);
-                if (projectFiles.glbFiles && projectFiles.glbFiles.length > 0) {
-                    const serverModels: ModelFile[] = projectFiles.glbFiles.map((url, index) => {
-                        const fileName = url.split("/").pop() || `model-${index}`;
-                        const extension = fileName.split(".").pop()?.toLowerCase() || "glb";
-                        const type =
-                            extension === "obj" ? "obj" : extension === "stl" ? "stl" : "gltf";
+                if (
+                    projectFiles?.glbFiles &&
+                    Array.isArray(projectFiles.glbFiles) &&
+                    projectFiles.glbFiles.length > 0
+                ) {
+                    const serverModels: ModelFile[] = projectFiles.glbFiles
+                        .filter((url) => url && !url.endsWith(".json"))
+                        .map((url, index) => {
+                            const fileName = url.split("/").pop() || `model-${index}`;
+                            const extension = fileName.split(".").pop()?.toLowerCase() || "glb";
+                            const type =
+                                extension === "obj" ? "obj" : extension === "stl" ? "stl" : "gltf";
 
-                        return {
-                            id: `server-${Date.now()}-${index}`,
-                            name: fileName,
-                            url: url,
-                            type: type as "gltf" | "obj" | "stl",
-                        };
-                    });
+                            return {
+                                id: `available-${Date.now()}-${index}`,
+                                name: fileName,
+                                url: url,
+                                type: type as "gltf" | "obj" | "stl",
+                            };
+                        });
                     setAvailableFiles(serverModels);
                 }
             } catch (fileErr) {
-                // No files found for this project
+                console.error("Failed to load files:", fileErr);
             }
 
             await projectsApi.updateLastAccessed(projectId);
@@ -430,22 +436,26 @@ export default function ProjectDetailPage() {
 
             const projectFiles = await projectsApi.getFiles(projectId);
 
-            const serverModels: ModelFile[] = projectFiles.glbFiles
-                .filter((url) => !url.endsWith(".json"))
-                .map((url, index) => {
-                    const fileName = url.split("/").pop() || `model-${index}`;
-                    const extension = fileName.split(".").pop()?.toLowerCase() || "glb";
-                    const type = extension === "obj" ? "obj" : extension === "stl" ? "stl" : "gltf";
+            if (projectFiles?.glbFiles && Array.isArray(projectFiles.glbFiles)) {
+                const serverModels: ModelFile[] = projectFiles.glbFiles
+                    .filter((url) => url && !url.endsWith(".json"))
+                    .map((url, index) => {
+                        const fileName = url.split("/").pop() || `model-${index}`;
+                        const extension = fileName.split(".").pop()?.toLowerCase() || "glb";
+                        const type =
+                            extension === "obj" ? "obj" : extension === "stl" ? "stl" : "gltf";
 
-                    return {
-                        id: `available-${Date.now()}-${index}`,
-                        name: fileName,
-                        url: url,
-                        type: type as "gltf" | "obj" | "stl",
-                    };
-                });
+                        return {
+                            id: `available-${Date.now()}-${index}`,
+                            name: fileName,
+                            url: url,
+                            type: type as "gltf" | "obj" | "stl",
+                        };
+                    });
 
-            setAvailableFiles(serverModels);
+                setAvailableFiles(serverModels);
+            }
+
             setShowUpload(false);
 
             alert("Files uploaded successfully!");
