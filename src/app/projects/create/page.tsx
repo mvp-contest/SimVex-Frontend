@@ -82,6 +82,20 @@ export default function CreateProjectPage() {
                     </h1>
 
                     <form onSubmit={handleSubmit} className="space-y-8">
+                        <Select
+                            label="Team"
+                            value={formData.teamId}
+                            onChange={(e) => setFormData({ ...formData, teamId: e.target.value })}
+                            options={[
+                                { value: "", label: "Select a team" },
+                                ...teams.map((team) => ({
+                                    value: team.id,
+                                    label: team.name,
+                                })),
+                            ]}
+                            required
+                        />
+
                         <TextInput
                             label="Project Name"
                             placeholder="Enter project name (e.g., Robot Arm Assembly)"
@@ -98,20 +112,6 @@ export default function CreateProjectPage() {
                                 setFormData({ ...formData, description: e.target.value })
                             }
                             rows={3}
-                        />
-
-                        <Select
-                            label="Team"
-                            value={formData.teamId}
-                            onChange={(e) => setFormData({ ...formData, teamId: e.target.value })}
-                            options={[
-                                { value: "", label: "Select a team" },
-                                ...teams.map((team) => ({
-                                    value: team.id,
-                                    label: team.name,
-                                })),
-                            ]}
-                            required
                         />
 
                         <div className="pt-4">
