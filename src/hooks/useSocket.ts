@@ -23,7 +23,7 @@ export function useSocket({
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    // Only connect if we have a chatId
+
     if (!chatId) {
       setConnected(false);
       return;
@@ -60,7 +60,7 @@ export function useSocket({
     };
   }, [chatId]);
 
-  // Join/leave chat room when chatId changes
+
   useEffect(() => {
     const socket = socketRef.current;
     if (!socket || !chatId || !connected) return;
@@ -72,7 +72,7 @@ export function useSocket({
     };
   }, [chatId, connected]);
 
-  // Register event listeners
+
   useEffect(() => {
     const socket = socketRef.current;
     if (!socket) return;

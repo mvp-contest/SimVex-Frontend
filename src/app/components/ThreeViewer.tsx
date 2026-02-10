@@ -188,7 +188,7 @@ function SceneControls({ selectedModel, onDeselect, modelRefsRef }: SceneControl
     );
 }
 
-// Collision detection manager - runs inside Canvas for useFrame access
+
 interface CollisionManagerProps {
     modelRefs: MutableRefObject<Record<string, MutableRefObject<THREE.Group | null>>>;
     modelIds: string[];

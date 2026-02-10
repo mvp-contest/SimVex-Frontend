@@ -54,7 +54,7 @@ export function useCollisionDetection({
 
     const refs = modelRefs.current;
 
-    // Compute world-space AABB for each model
+
     const boxes: BoundingBoxInfo[] = [];
     for (const id of modelIds) {
       const group = refs[id]?.current;
@@ -73,7 +73,7 @@ export function useCollisionDetection({
       return;
     }
 
-    // Pairwise intersection test
+
     const newCollisions: CollisionPair[] = [];
     const newCollidingIds = new Set<string>();
 

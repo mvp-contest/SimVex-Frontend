@@ -62,7 +62,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* Email Address */}
+          {}
           <div className="relative">
             <div className="absolute left-3 top-[38px] -translate-y-1/2 text-(--color-text-muted) z-10">
               <Mail size={20} />
@@ -78,7 +78,7 @@ export default function LoginPage() {
             />
           </div>
 
-          {/* Password */}
+          {}
           <div className="relative">
             <div className="absolute left-3 top-[38px] -translate-y-1/2 text-(--color-text-muted) z-10">
               <Lock size={20} />
@@ -101,7 +101,7 @@ export default function LoginPage() {
             </button>
           </div>
 
-          {/* Submit Button */}
+          {}
           <div className="pt-2">
             <Button
               type="submit"
@@ -112,7 +112,7 @@ export default function LoginPage() {
             </Button>
           </div>
 
-          {/* Sign Up Link */}
+          {}
           <div className="text-center pt-2">
             <span className="text-sm text-(--color-text-muted)">
               Don&apos;t have an account?{" "}

@@ -34,7 +34,7 @@ export default function SettingsPage() {
       setAboutUs(data.aboutUs || "");
     } catch (err) {
       console.error("Failed to load profile:", err);
-      // 프로필이 없으면 user 정보로 초기화
+
       setNickname(user.nickname || "");
       setAboutUs("");
     } finally {
@@ -90,13 +90,13 @@ export default function SettingsPage() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Profile Section */}
+        {}
         <div className="lg:col-span-2 bg-(--color-card-bg) border border-(--color-border-primary) rounded-xl p-6 sm:p-8">
           <h3 className="text-lg font-semibold text-(--color-text-primary) mb-6">
             Profile Information
           </h3>
 
-          {/* Avatar */}
+          {}
           <div className="mb-8">
             <label className="text-sm font-medium text-(--color-text-secondary) block mb-3">
               Profile Picture
@@ -152,7 +152,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Account Info Sidebar */}
+        {}
         <div className="bg-(--color-card-bg) border border-(--color-border-primary) rounded-xl p-6 h-fit">
           <h3 className="text-base font-semibold text-(--color-text-primary) mb-4">
             Account Information

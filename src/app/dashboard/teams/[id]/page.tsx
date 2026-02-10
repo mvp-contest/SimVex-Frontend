@@ -49,7 +49,7 @@ export default function TeamDetailPage() {
     const [newProjectName, setNewProjectName] = useState("");
     const [newProjectFiles, setNewProjectFiles] = useState<File[]>([]);
 
-    // Team Chat state
+
     const [chat, setChat] = useState<Chat | null>(null);
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
     const [newChatMessage, setNewChatMessage] = useState("");
@@ -58,7 +58,7 @@ export default function TeamDetailPage() {
     const chatEndRef = useRef<HTMLDivElement>(null);
     const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // WebSocket event handlers
+
     const handleNewMessage = useCallback((message: ChatMessage) => {
         setChatMessages((prev) => {
             if (prev.some((m) => m.id === message.id)) return prev;
@@ -98,7 +98,7 @@ export default function TeamDetailPage() {
         [user?.id],
     );
 
-    // Socket connection
+
     const { connected, sendMessage, sendTyping } = useSocket({
         chatId: chat?.id ?? null,
         onNewMessage: handleNewMessage,
@@ -107,7 +107,7 @@ export default function TeamDetailPage() {
         onUserTyping: handleUserTyping,
     });
 
-    // Auto-scroll chat to bottom
+
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [chatMessages]);
@@ -352,7 +352,7 @@ export default function TeamDetailPage() {
 
     return (
         <div className="max-w-[1200px] mx-auto p-6 md:p-8">
-            {/* Team Header */}
+            {}
             <div className="mb-6">
                 <h2 className="text-2xl font-bold text-(--color-text-primary) mb-2">{team.name}</h2>
                 {team.description && (
@@ -360,7 +360,7 @@ export default function TeamDetailPage() {
                 )}
             </div>
 
-            {/* Tabs */}
+            {}
             <div className="flex gap-8 mb-6 border-b border-(--color-border-primary)">
                 <button
                     onClick={() => setActiveTab("members")}
@@ -396,9 +396,9 @@ export default function TeamDetailPage() {
 
             {activeTab === "members" ? (
                 <div className="flex flex-col lg:flex-row gap-6">
-                    {/* Left: Members Table */}
+                    {}
                     <div className="flex-1">
-                        {/* Subtitle + Search */}
+                        {}
                         <div className="flex items-center justify-between mb-4">
                             <p className="text-sm text-(--color-text-secondary)">
                                 Manage the members of your team below.
@@ -417,9 +417,9 @@ export default function TeamDetailPage() {
                             </div>
                         </div>
 
-                        {/* Table */}
+                        {}
                         <div className="bg-(--color-card-bg) border border-(--color-border-primary) rounded-lg overflow-hidden">
-                            {/* Table Header */}
+                            {}
                             <div className="grid grid-cols-[48px_1fr_120px_48px] items-center px-4 py-2 bg-[#12141b] border-b border-(--color-border-primary)">
                                 <span className="text-xs font-medium text-(--color-text-muted)">
                                     Profile
@@ -433,13 +433,13 @@ export default function TeamDetailPage() {
                                 <span />
                             </div>
 
-                            {/* Table Rows */}
+                            {}
                             {filteredMembers.map((member) => (
                                 <div
                                     key={member.id}
                                     className="grid grid-cols-[48px_1fr_120px_48px] items-center px-4 py-3 border-b border-(--color-border-primary) last:border-0 hover:bg-(--color-card-bg)/80 transition-colors"
                                 >
-                                    {/* Avatar */}
+                                    {}
                                     <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-(--color-input-bg) text-(--color-text-muted) overflow-hidden">
                                         {member.user.profile.avatar ? (
                                             <Image
@@ -453,7 +453,7 @@ export default function TeamDetailPage() {
                                         )}
                                     </div>
 
-                                    {/* Name + Email */}
+                                    {}
                                     <div>
                                         <p className="text-sm font-medium text-(--color-text-primary)">
                                             {member.user.profile.nickname}
@@ -463,7 +463,7 @@ export default function TeamDetailPage() {
                                         </p>
                                     </div>
 
-                                    {/* Role Badge */}
+                                    {}
                                     <div>
                                         <button
                                             className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium transition-colors ${
@@ -489,7 +489,7 @@ export default function TeamDetailPage() {
                                         </button>
                                     </div>
 
-                                    {/* Action Icon */}
+                                    {}
                                     <div className="flex justify-center">
                                         {member.role !== 0 && (
                                             <button
@@ -503,7 +503,7 @@ export default function TeamDetailPage() {
                                 </div>
                             ))}
 
-                            {/* Empty rows to fill space if needed */}
+                            {}
                             {filteredMembers.length === 0 && (
                                 <div className="p-8 text-center text-(--color-text-muted)">
                                     No members found matching your search.
@@ -512,13 +512,13 @@ export default function TeamDetailPage() {
                         </div>
                     </div>
 
-                    {/* Right: Team Settings Panel */}
+                    {}
                     <div className="w-full lg:w-[320px] bg-(--color-card-bg) border border-(--color-border-primary) rounded-lg p-5 flex-shrink-0 self-start h-fit">
                         <h3 className="font-semibold text-(--color-text-primary) mb-4">
                             Team Settings
                         </h3>
 
-                        {/* Team Name */}
+                        {}
                         <div className="mb-6">
                             <TextInput
                                 label="Team Name"
@@ -536,7 +536,7 @@ export default function TeamDetailPage() {
                             </Button>
                         </div>
 
-                        {/* Invite Code */}
+                        {}
                         <div className="mb-6 pb-6 border-b border-(--color-border-primary)">
                             <div className="flex flex-col gap-2">
                                 <label className="text-sm font-medium text-(--color-text-secondary)">
@@ -565,7 +565,7 @@ export default function TeamDetailPage() {
                             </div>
                         </div>
 
-                        {/* Disband Section */}
+                        {}
                         <div>
                             <h4 className="font-medium text-(--color-text-primary) text-sm mb-1">
                                 Danger Zone
@@ -586,7 +586,7 @@ export default function TeamDetailPage() {
                 </div>
             ) : activeTab === "projects" ? (
                 <div>
-                    {/* Projects Header */}
+                    {}
                     <div className="flex items-center justify-between mb-6">
                         <p className="text-(--color-text-secondary)">
                             Manage projects within this team.
@@ -601,7 +601,7 @@ export default function TeamDetailPage() {
                         </Button>
                     </div>
 
-                    {/* Projects Grid */}
+                    {}
                     {projects.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-(--color-border-primary) rounded-xl bg-(--color-card-bg)/30">
                             <Box size={48} className="text-(--color-text-muted) mb-4 opacity-50" />
@@ -669,7 +669,7 @@ export default function TeamDetailPage() {
                         className="bg-(--color-card-bg) border border-(--color-border-primary) rounded-xl overflow-hidden flex flex-col"
                         style={{ height: "600px" }}
                     >
-                        {/* Chat Header */}
+                        {}
                         <div className="flex items-center justify-between px-6 py-4 border-b border-(--color-border-primary) bg-(--color-header-bg)">
                             <h3 className="text-(--color-text-primary) font-semibold">Team Chat</h3>
                             {connected ? (
@@ -685,7 +685,7 @@ export default function TeamDetailPage() {
                             )}
                         </div>
 
-                        {/* Chat Messages */}
+                        {}
                         <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
                             {loadingChat ? (
                                 <div className="flex justify-center items-center h-full">
@@ -738,7 +738,7 @@ export default function TeamDetailPage() {
                             <div ref={chatEndRef} />
                         </div>
 
-                        {/* Chat Input */}
+                        {}
                         <div className="px-6 py-4 border-t border-(--color-border-primary) bg-(--color-header-bg)">
                             <div className="flex gap-3">
                                 <input
@@ -762,11 +762,11 @@ export default function TeamDetailPage() {
                 </div>
             )}
 
-            {/* Create Project Modal */}
+            {}
             {showCreateProjectModal && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-(--color-card-bg) border-2 border-(--color-border-primary) rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
-                        {/* Modal Header */}
+                        {}
                         <div className="flex items-center justify-between p-6 border-b border-(--color-border-primary) sticky top-0 bg-(--color-card-bg) z-10">
                             <h2 className="text-2xl font-bold text-(--color-text-primary)">
                                 Create New Project
@@ -783,9 +783,9 @@ export default function TeamDetailPage() {
                             </button>
                         </div>
 
-                        {/* Modal Body */}
+                        {}
                         <div className="p-6 space-y-6">
-                            {/* Project Name */}
+                            {}
                             <div>
                                 <label className="block text-sm font-medium text-(--color-text-primary) mb-2">
                                     Project Name{" "}
@@ -800,7 +800,7 @@ export default function TeamDetailPage() {
                                 />
                             </div>
 
-                            {/* File Upload */}
+                            {}
                             <div>
                                 <label className="block text-sm font-medium text-(--color-text-primary) mb-2">
                                     Upload 3D Files & JSON (Optional)
@@ -830,7 +830,7 @@ export default function TeamDetailPage() {
                             </div>
                         </div>
 
-                        {/* Modal Footer */}
+                        {}
                         <div className="flex items-center justify-end gap-3 p-6 border-t border-(--color-border-primary) bg-(--color-card-bg)">
                             <Button
                                 onClick={() => {

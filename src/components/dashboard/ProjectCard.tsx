@@ -18,7 +18,7 @@ interface ProjectCardProps {
 export default function ProjectCard({ project }: ProjectCardProps) {
   return (
     <div className="bg-(--color-card-bg) border border-(--color-border-primary) rounded-xl p-5 flex flex-col gap-4 hover:border-(--color-accent-blue) transition-colors cursor-pointer group">
-      {/* Thumbnail */}
+      {}
       <div className="relative aspect-square w-full bg-[#12141b] rounded-lg flex items-center justify-center border border-(--color-card-border) overflow-hidden">
         <Image
           src={project.thumbnailUrl}
@@ -28,7 +28,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
         />
       </div>
 
-      {/* Project info */}
+      {}
       <div className="flex flex-col gap-3">
         <div>
           <h3 className="text-xl font-semibold text-(--color-text-primary) mb-1 truncate">
@@ -39,10 +39,10 @@ export default function ProjectCard({ project }: ProjectCardProps) {
           </p>
         </div>
 
-        {/* Divider */}
+        {}
         <div className="h-px bg-(--color-border-primary)" />
 
-        {/* Stats */}
+        {}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5 text-(--color-text-secondary)" title="Members">

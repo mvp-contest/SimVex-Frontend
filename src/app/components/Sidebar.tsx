@@ -39,7 +39,7 @@ export default function Sidebar() {
       }
     } catch (err) {
       console.error('Failed to load sidebar data:', err);
-      // 에러 발생 시에도 빈 배열로 설정
+
       setTeams([]);
       setProjects([]);
     } finally {
@@ -64,7 +64,7 @@ export default function Sidebar() {
   return (
     <aside className="w-[240px] min-h-full border-r border-(--color-border-primary) flex-shrink-0 bg-(--color-sidebar-bg) flex flex-col">
       <nav className="flex-1 pt-6 px-3 flex flex-col gap-1">
-        {/* Home */}
+        {}
         <Link
           href="/dashboard/teams"
           className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors group ${
@@ -77,7 +77,7 @@ export default function Sidebar() {
           <span className="font-medium text-sm">Home</span>
         </Link>
 
-        {/* My Teams */}
+        {}
         <div className="mt-6 mb-2 px-3">
           <span className="text-xs font-semibold text-(--color-text-muted) uppercase tracking-wider">
             My Teams
@@ -122,7 +122,7 @@ export default function Sidebar() {
                 </button>
               </div>
 
-              {/* Projects under this team */}
+              {}
               {expandedTeams.has(team.id) && (
                 <div className="ml-4 mt-1 pl-3 border-l border-(--color-border-primary) flex flex-col gap-0.5">
                   {projects
@@ -151,7 +151,7 @@ export default function Sidebar() {
         )}
       </nav>
 
-      {/* Settings (Bottom) */}
+      {}
       <div className="p-3 border-t border-(--color-border-primary)">
         <Link
           href="/dashboard/settings"

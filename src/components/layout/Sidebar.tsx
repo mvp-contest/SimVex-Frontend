@@ -38,7 +38,7 @@ export default function Sidebar() {
     return (
         <aside className="w-[224px] bg-(--color-card-bg) border-r-[2px] border-(--color-border-primary) min-h-[calc(100vh-88px)]">
             <nav className="py-8">
-                {/* Home */}
+                {}
                 <NavItem
                     href="/"
                     icon={<HomeIcon className="w-[23px] h-[25px]" style={{ fill: "#787878" }} />}
@@ -46,7 +46,7 @@ export default function Sidebar() {
                     active={false}
                 />
 
-                {/* My Teams with dropdown */}
+                {}
                 <div className="relative">
                     <button
                         onClick={() => setIsMyTeamsOpen(!isMyTeamsOpen)}
@@ -96,7 +96,7 @@ export default function Sidebar() {
                     )}
                 </div>
 
-                {/* Settings */}
+                {}
                 <NavItem
                     href="/settings"
                     icon={

@@ -32,7 +32,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-(--color-page-bg)">
-      {/* Navigation */}
+      {}
       <nav className="fixed top-0 left-0 right-0 z-50 px-8 py-4 flex items-center justify-between border-b border-(--color-border-primary) bg-(--color-header-bg)/80 backdrop-blur-md">
         <div className="flex items-center gap-3">
           <Image src="/icons/brand/simvex-logo.svg" alt="SIMVEX" width={32} height={32} />
@@ -52,7 +52,7 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* Sidebar (Visual only) */}
+      {}
       <aside className="fixed left-0 top-0 bottom-0 w-[240px] pt-24 px-4 bg-(--color-sidebar-bg) border-r border-(--color-border-primary) hidden md:block">
         <nav className="flex flex-col gap-1">
           <div className="flex items-center gap-3 px-3 py-2 text-(--color-text-secondary) text-sm font-medium rounded-lg hover:bg-(--color-input-bg) cursor-default transition-colors">
@@ -70,9 +70,9 @@ export default function Home() {
         </nav>
       </aside>
 
-      {/* Main Content */}
+      {}
       <main className="md:ml-[240px] pt-24 pb-20">
-        {/* Hero Section */}
+        {}
         <section className="px-8 md:px-12 py-16 md:py-24">
           <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
             <div>
@@ -101,10 +101,10 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Features Section */}
+        {}
         <section className="px-8 md:px-12 py-16">
           <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8">
-            {/* AI Coach & 3D Viewer */}
+            {}
             <div className="p-8 rounded-2xl bg-(--color-card-bg) border border-(--color-border-primary) hover:border-(--color-accent-blue)/50 transition-colors group">
               <h3 className="text-2xl font-bold text-(--color-text-primary) mb-4">AI Coach & 3D Viewer</h3>
               <p className="text-(--color-text-secondary) text-sm mb-8">High-contrast with 3D viewer and AI-powered assistant.</p>
@@ -114,7 +114,7 @@ export default function Home() {
               <p className="text-center text-(--color-text-muted) text-xs mt-4">© Capabilities</p>
             </div>
 
-            {/* Projects Dashboard */}
+            {}
             <div className="p-8 rounded-2xl bg-(--color-card-bg) border border-(--color-border-primary) hover:border-(--color-accent-blue)/50 transition-colors group">
               <h3 className="text-2xl font-bold text-(--color-text-primary) mb-4">Projects Dashboard</h3>
               <p className="text-(--color-text-secondary) text-sm mb-8">View and track/access a list of all projects within your team in real-time.</p>
@@ -140,7 +140,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* My Teams Section */}
+        {}
         <section className="px-8 md:px-12 py-16">
           <div className="max-w-6xl mx-auto">
             <h2 className="text-3xl font-bold text-(--color-text-primary) mb-4">My Teams</h2>
@@ -153,7 +153,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Q&A Section */}
+        {}
         <section className="px-8 md:px-12 py-20">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-4xl font-bold text-(--color-text-primary) text-center mb-16">Q&A</h2>
@@ -180,7 +180,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* CTA Section */}
+        {}
         <section className="px-8 md:px-12 py-20">
           <div className="max-w-4xl mx-auto text-center bg-linear-to-b from-(--color-card-bg) to-transparent p-12 rounded-3xl border border-(--color-border-primary)">
             <h2 className="text-4xl font-bold text-(--color-text-primary) mb-8">Start with SIMVEX today</h2>
@@ -192,7 +192,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Footer */}
+        {}
         <footer className="px-8 md:px-12 py-8 border-t border-(--color-border-primary) mt-12">
           <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-(--color-text-muted) text-sm">© 2024 SIMVEX. All rights reserved.</p>

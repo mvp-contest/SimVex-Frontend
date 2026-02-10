@@ -24,7 +24,7 @@ export default function CollisionOverlay({
 
   return (
     <group name="collision-overlay">
-      {/* Per-model bounding boxes */}
+      {}
       {boundingBoxes.map(({ id, box }) => (
         <BoundingBoxHelper
           key={`bbox-${id}`}
@@ -34,7 +34,7 @@ export default function CollisionOverlay({
         />
       ))}
 
-      {/* Overlap intersection regions */}
+      {}
       {collisions.map(({ idA, idB, intersectionBox }) => (
         <OverlapRegion
           key={`overlap-${idA}-${idB}`}

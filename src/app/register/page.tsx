@@ -82,7 +82,7 @@ export default function RegisterPage() {
             </div>
           )}
 
-          {/* Full Name */}
+          {}
           <div className="relative">
             <div className="absolute left-3 top-[38px] -translate-y-1/2 text-(--color-text-muted) z-10">
               <User size={20} />
@@ -98,7 +98,7 @@ export default function RegisterPage() {
             />
           </div>
 
-          {/* Email Address */}
+          {}
           <div className="relative">
             <div className="absolute left-3 top-[38px] -translate-y-1/2 text-(--color-text-muted) z-10">
               <Mail size={20} />
@@ -114,7 +114,7 @@ export default function RegisterPage() {
             />
           </div>
 
-          {/* Password */}
+          {}
           <div className="relative">
             <div className="absolute left-3 top-[38px] -translate-y-1/2 text-(--color-text-muted) z-10">
               <Lock size={20} />
@@ -137,7 +137,7 @@ export default function RegisterPage() {
             </button>
           </div>
 
-          {/* Confirm Password */}
+          {}
           <div className="relative">
             <div className="absolute left-3 top-[38px] -translate-y-1/2 text-(--color-text-muted) z-10">
               <Lock size={20} />
@@ -160,7 +160,7 @@ export default function RegisterPage() {
             </button>
           </div>
 
-          {/* Terms Checkbox */}
+          {}
           <div className="flex items-center gap-3 pt-2">
             <button
               type="button"
@@ -185,7 +185,7 @@ export default function RegisterPage() {
             </span>
           </div>
 
-          {/* Submit Button */}
+          {}
           <div className="pt-2">
             <Button
               type="submit"
@@ -196,7 +196,7 @@ export default function RegisterPage() {
             </Button>
           </div>
 
-          {/* Login Link */}
+          {}
           <div className="text-center pt-2">
             <span className="text-sm text-(--color-text-muted)">
               Already have an account?{" "}

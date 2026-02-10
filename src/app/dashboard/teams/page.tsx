@@ -90,7 +90,7 @@ export default function TeamsPage() {
 
   return (
     <div className="max-w-[1200px] mx-auto p-6 md:p-8">
-      {/* Page Header */}
+      {}
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-(--color-text-primary) mb-2">
           My Teams
@@ -106,7 +106,7 @@ export default function TeamsPage() {
         </div>
       )}
 
-      {/* Toolbar */}
+      {}
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-(--color-text-primary)">
           All Teams
@@ -125,14 +125,14 @@ export default function TeamsPage() {
         </div>
       </div>
 
-      {/* Team Cards Grid */}
+      {}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {filteredTeams.map((team) => (
           <article
             key={team.id}
             className="group bg-(--color-card-bg) border border-(--color-card-border) rounded-xl overflow-hidden hover:border-(--color-accent-blue) transition-colors"
           >
-            {/* Thumbnail area */}
+            {}
             <div className="relative h-[140px] bg-[#12141b] flex items-center justify-center border-b border-(--color-card-border)">
               <button
                 onClick={() => toggleTeamSelection(team.id)}
@@ -149,7 +149,7 @@ export default function TeamsPage() {
               />
             </div>
 
-            {/* Info */}
+            {}
             <div className="p-5">
               <div className="flex justify-between items-start mb-2">
                 <h4 className="font-semibold text-(--color-text-primary) truncate flex-1 pr-2">
@@ -166,7 +166,7 @@ export default function TeamsPage() {
                 </p>
               )}
 
-              {/* Member Avatars */}
+              {}
               <div className="flex items-center mb-4 h-8">
                 {team.members.slice(0, 5).map((member, idx) => (
                   <div
@@ -195,7 +195,7 @@ export default function TeamsPage() {
                 )}
               </div>
 
-              {/* View Team Button */}
+              {}
               <Link href={`/dashboard/teams/${team.id}`}>
                 <Button variant="secondary" className="w-full text-sm py-2">
                   View Team
@@ -205,7 +205,7 @@ export default function TeamsPage() {
           </article>
         ))}
 
-        {/* Create New Team Card */}
+        {}
         {showCreateForm ? (
           <form
             onSubmit={handleCreateTeam}
@@ -256,7 +256,7 @@ export default function TeamsPage() {
         )}
       </div>
 
-      {/* Pagination (Optional - currently static) */}
+      {}
       <div className="border-t border-(--color-border-primary) pt-4 flex items-center justify-center gap-2">
         <Button variant="ghost" size="sm" disabled>Previous</Button>
         <div className="px-3 py-1 rounded bg-(--color-card-bg) border border-(--color-card-border) text-sm font-medium text-(--color-text-primary)">
