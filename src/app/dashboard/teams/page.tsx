@@ -141,7 +141,7 @@ export default function TeamsPage() {
                 {team.selected && <Check size={14} />}
               </button>
               <Image
-                src="/icons/brand/cube-preview.svg"
+                src="/SIMVEX_logo_2.svg"
                 alt="Team Icon"
                 width={80}
                 height={80}

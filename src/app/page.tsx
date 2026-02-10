@@ -129,7 +129,7 @@ export default function Home() {
                 </div>
                 <div className="p-5 rounded-xl bg-[#12141b] border border-(--color-border-primary)">
                   <FolderOpen size={24} className="text-(--color-text-muted) mb-3" />
-                  <p className="text-(--color-text-light) text-sm font-medium">SV Renderer</p>
+                  <p className="text-(--color-text-light) text-sm font-medium">Team Project</p>
                   <div className="flex items-center gap-1.5 mt-2">
                     <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
                     <span className="text-xs text-(--color-text-muted)">Active</span>

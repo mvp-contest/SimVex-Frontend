@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState, type MutableRefObject } from 'react';
+import { useRef, useEffect, useState, useCallback, type MutableRefObject } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Grid, PerspectiveCamera, TransformControls, Outlines } from '@react-three/drei';
 import * as THREE from 'three';
@@ -8,6 +8,8 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { useCollisionDetection } from '@/hooks/useCollisionDetection';
+import CollisionOverlay from './collision/CollisionOverlay';
 
 interface ModelData {
   id: string;
@@ -16,8 +18,9 @@ interface ModelData {
   name: string;
 }
 
-interface ThreeViewerProps {
+export interface ThreeViewerProps {
   models: ModelData[];
+  onCollisionData?: (data: { count: number; collidingIds: Set<string> }) => void;
 }
 
 interface ModelProps {
@@ -25,17 +28,18 @@ interface ModelProps {
   type: 'gltf' | 'obj' | 'stl';
   position: [number, number, number];
   isSelected: boolean;
+  isColliding: boolean;
   onClick: () => void;
   meshRef: MutableRefObject<THREE.Group | null>;
 }
 
-function Model({ url, type, position, isSelected, onClick, meshRef }: ModelProps) {
+function Model({ url, type, position, isSelected, isColliding, onClick, meshRef }: ModelProps) {
   const [model, setModel] = useState<THREE.Object3D | THREE.Mesh | null>(null);
   const [hovered, setHovered] = useState(false);
 
   useEffect(() => {
     let loader: GLTFLoader | OBJLoader | STLLoader;
-    
+
     switch (type) {
       case 'gltf':
         loader = new GLTFLoader();
@@ -78,7 +82,7 @@ function Model({ url, type, position, isSelected, onClick, meshRef }: ModelProps
   if (!model) return null;
 
   return (
-    <group 
+    <group
       ref={meshRef}
       position={position}
       onPointerOver={(e) => {
@@ -96,11 +100,14 @@ function Model({ url, type, position, isSelected, onClick, meshRef }: ModelProps
       }}
     >
       <primitive object={model}>
-        {hovered && !isSelected && (
+        {hovered && !isSelected && !isColliding && (
           <Outlines thickness={3} color="#4a9eff" />
         )}
         {isSelected && (
           <Outlines thickness={5} color="#ff9500" />
+        )}
+        {isColliding && !isSelected && (
+          <Outlines thickness={4} color="#ef4444" />
         )}
       </primitive>
     </group>
@@ -143,7 +150,7 @@ function SceneControls({ selectedModel, onDeselect, modelRefsRef }: SceneControl
       if (e.key === 's' || e.key === 'S') setMode('scale');
       if (e.key === 'Escape') onDeselect();
     };
-    
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onDeselect]);
@@ -171,11 +178,83 @@ function SceneControls({ selectedModel, onDeselect, modelRefsRef }: SceneControl
   );
 }
 
-export default function ThreeViewer({ models }: ThreeViewerProps) {
+// Collision detection manager - runs inside Canvas for useFrame access
+interface CollisionManagerProps {
+  modelRefs: MutableRefObject<Record<string, MutableRefObject<THREE.Group | null>>>;
+  modelIds: string[];
+  enabled: boolean;
+  onCollisionCountChange: (count: number) => void;
+  onCollidingIdsChange: (ids: Set<string>) => void;
+}
+
+function CollisionManager({
+  modelRefs,
+  modelIds,
+  enabled,
+  onCollisionCountChange,
+  onCollidingIdsChange,
+}: CollisionManagerProps) {
+  const collision = useCollisionDetection({
+    modelRefs,
+    modelIds,
+    frameSkip: 2,
+  });
+
+  useEffect(() => {
+    collision.setEnabled(enabled);
+  }, [enabled]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    onCollisionCountChange(collision.collisionCount);
+  }, [collision.collisionCount, onCollisionCountChange]);
+
+  useEffect(() => {
+    onCollidingIdsChange(collision.collidingModelIds);
+  }, [collision.collidingModelIds, onCollidingIdsChange]);
+
+  return (
+    <CollisionOverlay
+      enabled={collision.enabled}
+      boundingBoxes={collision.boundingBoxes}
+      collisions={collision.collisions}
+      collidingModelIds={collision.collidingModelIds}
+    />
+  );
+}
+
+export default function ThreeViewer({ models, onCollisionData }: ThreeViewerProps) {
   const [modelPositions, setModelPositions] = useState<Record<string, [number, number, number]>>({});
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const [showControls, setShowControls] = useState(false);
   const modelRefs = useRef<Record<string, MutableRefObject<THREE.Group | null>>>({});
+
+  // Collision detection state (managed internally)
+  const [collisionEnabled, setCollisionEnabled] = useState(false);
+  const [collisionCount, setCollisionCount] = useState(0);
+  const [collidingIds, setCollidingIds] = useState<Set<string>>(new Set());
+
+  // Keyboard shortcut: C to toggle collision
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if ((e.key === 'c' || e.key === 'C') && models.length >= 2) {
+        setCollisionEnabled(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [models.length]);
+
+  const handleCollisionCountChange = useCallback((count: number) => {
+    setCollisionCount(count);
+    onCollisionData?.({ count, collidingIds });
+  }, [onCollisionData, collidingIds]);
+
+  const handleCollidingIdsChange = useCallback((ids: Set<string>) => {
+    setCollidingIds(ids);
+    onCollisionData?.({ count: 0, collidingIds: ids });
+  }, [onCollisionData]);
 
   useEffect(() => {
     const positions: Record<string, [number, number, number]> = {};
@@ -202,8 +281,8 @@ export default function ThreeViewer({ models }: ThreeViewerProps) {
 
   return (
     <div className="relative w-full h-full">
-      <Canvas 
-        shadows 
+      <Canvas
+        shadows
         onClick={(e) => {
           if (e.target === e.currentTarget) {
             setSelectedModel(null);
@@ -228,7 +307,7 @@ export default function ThreeViewer({ models }: ThreeViewerProps) {
           shadow-mapSize-height={2048}
         />
         <pointLight position={[-10, -10, -5]} intensity={0.5} />
-        
+
         {/* Grid */}
         <Grid
           args={[40, 40]}
@@ -243,7 +322,7 @@ export default function ThreeViewer({ models }: ThreeViewerProps) {
           followCamera={false}
           infiniteGrid
         />
-        
+
         {/* Models */}
         {/* eslint-disable-next-line react-hooks/refs */}
         {models.map((model) => (
@@ -253,6 +332,7 @@ export default function ThreeViewer({ models }: ThreeViewerProps) {
             type={model.type}
             position={modelPositions[model.id] || [0, 0, 0]}
             isSelected={selectedModel === model.id}
+            isColliding={collisionEnabled && collidingIds.has(model.id)}
             onClick={() => {
               console.log('Model clicked:', model.id);
               setSelectedModel(model.id);
@@ -260,7 +340,18 @@ export default function ThreeViewer({ models }: ThreeViewerProps) {
             meshRef={modelRefs.current[model.id] || { current: null }}
           />
         ))}
-        
+
+        {/* Collision Detection */}
+        {models.length >= 2 && (
+          <CollisionManager
+            modelRefs={modelRefs}
+            modelIds={models.map(m => m.id)}
+            enabled={collisionEnabled}
+            onCollisionCountChange={handleCollisionCountChange}
+            onCollidingIdsChange={handleCollidingIdsChange}
+          />
+        )}
+
         {/* Default cube if no models */}
         {models.length === 0 && (
           <mesh castShadow receiveShadow>
@@ -269,10 +360,10 @@ export default function ThreeViewer({ models }: ThreeViewerProps) {
           </mesh>
         )}
       </Canvas>
-      
-      {/* Info overlay */}
+
+      {/* Controls overlay */}
       {models.length > 0 && (
-        <div className="absolute top-4 left-4">
+        <div className="absolute top-4 left-4 z-10">
           <button
             onClick={() => setShowControls(!showControls)}
             className="bg-(--color-card-bg)/90 border border-(--color-border-primary) rounded-lg px-3 py-2 hover:bg-(--color-input-bg) transition-colors flex items-center gap-2 backdrop-blur-sm"
@@ -281,27 +372,68 @@ export default function ThreeViewer({ models }: ThreeViewerProps) {
               <path d="M8 2v12M2 8h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
             </svg>
             <span className="text-(--color-text-light) text-xs font-semibold">Controls</span>
-            <svg 
-              width="12" 
-              height="12" 
-              viewBox="0 0 12 12" 
-              fill="none" 
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 12 12"
+              fill="none"
               className={`text-(--color-text-muted) transition-transform ${showControls ? 'rotate-180' : ''}`}
             >
               <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
-          
+
           {showControls && (
-            <div className="mt-2 bg-(--color-card-bg)/90 border border-(--color-border-primary) rounded-lg p-3 animate-fadeIn backdrop-blur-sm">
+            <div className="mt-2 bg-(--color-card-bg)/90 border border-(--color-border-primary) rounded-lg p-3 animate-fadeIn backdrop-blur-sm min-w-[200px]">
+              {/* Keyboard shortcuts */}
               <div className="text-(--color-text-muted) text-xs space-y-1">
                 <p>• <span className="text-(--color-accent-blue)">Hover</span> = Blue outline</p>
                 <p>• <span className="text-(--color-status-warning)">Click</span> = Select (orange)</p>
                 <p>• <span className="text-(--color-text-light)">G</span> = Move</p>
                 <p>• <span className="text-(--color-text-light)">R</span> = Rotate</p>
                 <p>• <span className="text-(--color-text-light)">S</span> = Scale</p>
-                <p>• Click empty space to deselect</p>
+                <p>• <span className="text-(--color-text-light)">Esc</span> = Deselect</p>
               </div>
+
+              {/* Collision Detection Toggle */}
+              {models.length >= 2 && (
+                <div className="mt-2 pt-2 border-t border-(--color-border-primary)">
+                  <button
+                    onClick={() => setCollisionEnabled(!collisionEnabled)}
+                    className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded hover:bg-(--color-input-bg) transition-colors group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className={collisionEnabled ? 'text-(--color-accent-blue)' : 'text-(--color-text-muted)'}>
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span className={`text-xs font-medium ${collisionEnabled ? 'text-(--color-text-light)' : 'text-(--color-text-muted) group-hover:text-(--color-text-light)'}`}>
+                        Collision Detection
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {collisionEnabled && (
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                          collisionCount > 0
+                            ? 'bg-red-500/20 text-red-400'
+                            : 'bg-green-500/20 text-green-400'
+                        }`}>
+                          {collisionCount > 0 ? `${collisionCount} hit${collisionCount > 1 ? 's' : ''}` : 'Clear'}
+                        </span>
+                      )}
+                      {/* Toggle switch */}
+                      <div className={`w-7 h-4 rounded-full transition-colors relative ${collisionEnabled ? 'bg-(--color-accent-blue)' : 'bg-(--color-text-muted)/30'}`}>
+                        <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform ${collisionEnabled ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
+                      </div>
+                    </div>
+                  </button>
+                  <p className="text-(--color-text-muted) text-[10px] mt-1 px-2">
+                    Press <span className="text-(--color-text-light) font-medium">C</span> to toggle
+                  </p>
+                </div>
+              )}
+
+              {/* Model count */}
               <p className="text-(--color-text-secondary) text-xs mt-2 pt-2 border-t border-(--color-border-primary)">{models.length} model{models.length > 1 ? 's' : ''}</p>
             </div>
           )}

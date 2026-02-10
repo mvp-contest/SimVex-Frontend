@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useParams } from "next/navigation";
 import { projects as projectsApi, memos as memosApi, chats as chatsApi, ai as aiApi, type Project, type Memo, type Chat, type ChatMessage } from "@/lib/api";
 import { useAuth } from "@/app/context/AuthContext";
-import { Maximize2, Bot, Upload, X, Trash2, Send } from "lucide-react";
+import { useSocket } from "@/hooks/useSocket";
+import { Maximize2, Bot, Upload, X, Send } from "lucide-react";
 import dynamic from "next/dynamic";
 import FileUpload from "@/app/components/FileUpload";
 import Button from "@/components/ui/Button";
@@ -23,7 +24,7 @@ export default function ProjectDetailPage() {
   const params = useParams();
   const projectId = params.id as string;
   const { user } = useAuth();
-  
+
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -32,7 +33,7 @@ export default function ProjectDetailPage() {
   const [currentMemo, setCurrentMemo] = useState<Memo | null>(null);
   const [notes, setNotes] = useState("");
   const [savingMemo, setSavingMemo] = useState(false);
-  
+
   // 3D Model state
   interface ModelFile {
     id: string;
@@ -43,7 +44,14 @@ export default function ProjectDetailPage() {
   const [modelFiles, setModelFiles] = useState<ModelFile[]>([]);
   const [currentModelIndex, setCurrentModelIndex] = useState<number>(0);
   const [showUpload, setShowUpload] = useState(true);
-  
+  const [selectedNodeName, setSelectedNodeName] = useState<string>("default");
+
+  // Collision detection callback (data from ThreeViewer)
+  const handleCollisionData = useCallback((data: { count: number; collidingIds: Set<string> }) => {
+    // Can be used for external UI or logging if needed
+    console.log('Collision data:', data.count, 'collisions');
+  }, []);
+
   // AI Assistant state
   const [aiQuestion, setAiQuestion] = useState("");
   interface AiMessage {
@@ -54,12 +62,62 @@ export default function ProjectDetailPage() {
   }
   const [aiMessages, setAiMessages] = useState<AiMessage[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
-  
+
   // Project Chat state
   const [chat, setChat] = useState<Chat | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [newChatMessage, setNewChatMessage] = useState("");
   const [loadingChat, setLoadingChat] = useState(false);
+  const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // WebSocket event handlers
+  const handleNewMessage = useCallback((message: ChatMessage) => {
+    setChatMessages(prev => {
+      if (prev.some(m => m.id === message.id)) return prev;
+      return [...prev, message];
+    });
+  }, []);
+
+  const handleMessageEdited = useCallback((message: ChatMessage) => {
+    setChatMessages(prev =>
+      prev.map(m => m.id === message.id ? { ...m, content: message.content, editedAt: message.editedAt } : m)
+    );
+  }, []);
+
+  const handleMessageDeleted = useCallback((data: { id: string }) => {
+    setChatMessages(prev =>
+      prev.map(m => m.id === data.id ? { ...m, deletedAt: new Date().toISOString() } : m)
+    );
+  }, []);
+
+  const handleUserTyping = useCallback((data: { userId: string; isTyping: boolean }) => {
+    if (data.userId === user?.id) return;
+    setTypingUsers(prev => {
+      const next = new Set(prev);
+      if (data.isTyping) {
+        next.add(data.userId);
+      } else {
+        next.delete(data.userId);
+      }
+      return next;
+    });
+  }, [user?.id]);
+
+  // Socket connection
+  const { connected, sendMessage, sendTyping } = useSocket({
+    chatId: chat?.id ?? null,
+    onNewMessage: handleNewMessage,
+    onMessageEdited: handleMessageEdited,
+    onMessageDeleted: handleMessageDeleted,
+    onUserTyping: handleUserTyping,
+  });
+
+  // Auto-scroll chat to bottom
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages]);
 
   useEffect(() => {
     loadProject();
@@ -165,17 +223,63 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const handleSendChatMessage = async () => {
+  const handleSendChatMessage = () => {
     if (!newChatMessage.trim() || !chat || !user?.id) return;
-    
-    try {
-      await chatsApi.sendMessage(chat.id, user.id, newChatMessage);
+
+    // Create optimistic message for immediate display
+    const optimisticMessage: ChatMessage = {
+      id: `temp-${Date.now()}`,
+      chatId: chat.id,
+      userId: user.id,
+      content: newChatMessage,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      user: {
+        id: user.id,
+        personalId: user.personalId,
+        profile: {
+          id: user.id,
+          nickname: user.nickname,
+        },
+      },
+    };
+
+    // Add message immediately to UI
+    setChatMessages(prev => [...prev, optimisticMessage]);
+
+    if (connected) {
+      sendMessage(user.id, newChatMessage);
       setNewChatMessage("");
-      await loadChatMessages(chat.id);
-    } catch (err) {
-      console.error("Failed to send message:", err);
-      alert(err instanceof Error ? err.message : "Failed to send message");
+      // Stop typing indicator
+      sendTyping(user.id, false);
+    } else {
+      // Fallback to REST if WebSocket is disconnected
+      chatsApi.sendMessage(chat.id, user.id, newChatMessage).then(() => {
+        setNewChatMessage("");
+        loadChatMessages(chat.id);
+      }).catch((err) => {
+        console.error("Failed to send message:", err);
+        // Remove optimistic message on error
+        setChatMessages(prev => prev.filter(m => m.id !== optimisticMessage.id));
+      });
     }
+  };
+
+  const handleChatInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewChatMessage(e.target.value);
+    if (!user?.id) return;
+
+    // Send typing indicator
+    sendTyping(user.id, true);
+
+    // Clear previous timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    // Stop typing after 2 seconds of inactivity
+    typingTimeoutRef.current = setTimeout(() => {
+      sendTyping(user.id, false);
+    }, 2000);
   };
 
   const handleSendAiQuestion = async () => {
@@ -193,12 +297,13 @@ export default function ProjectDetailPage() {
     setAiLoading(true);
 
     try {
-      const response = await aiApi.ask(userMessage.content, `Project: ${project?.name || 'Unknown'}`);
-      
+      const nodeName = selectedNodeName || "default";
+      const response = await aiApi.askNode(projectId, nodeName, userMessage.content);
+
       const aiResponse: AiMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: response.answer,
+        content: response.response,
         timestamp: new Date()
       };
       setAiMessages(prev => [...prev, aiResponse]);
@@ -207,7 +312,7 @@ export default function ProjectDetailPage() {
       const errorResponse: AiMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: "I'm sorry, I'm having trouble connecting right now. Please try again later.",
+        content: "죄송합니다. 현재 AI 서비스에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.",
         timestamp: new Date()
       };
       setAiMessages(prev => [...prev, errorResponse]);
@@ -223,7 +328,7 @@ export default function ProjectDetailPage() {
       url: fileData.url,
       type: fileData.type,
     }));
-    
+
     setModelFiles(prev => {
       const newFiles = [...prev, ...newModels];
       setCurrentModelIndex(newFiles.length - 1);
@@ -239,7 +344,7 @@ export default function ProjectDetailPage() {
     }
     const newFiles = modelFiles.filter((_, i) => i !== index);
     setModelFiles(newFiles);
-    
+
     if (newFiles.length === 0) {
       setShowUpload(true);
       setCurrentModelIndex(0);
@@ -253,6 +358,17 @@ export default function ProjectDetailPage() {
     setModelFiles([]);
     setShowUpload(true);
     setCurrentModelIndex(0);
+  };
+
+  const getMessageDisplayName = (msg: ChatMessage) => {
+    if (msg.user?.profile?.nickname) return msg.user.profile.nickname;
+    if (msg.user?.personalId) return msg.user.personalId;
+    return "User";
+  };
+
+  const getMessageInitial = (msg: ChatMessage) => {
+    const name = getMessageDisplayName(msg);
+    return name.charAt(0).toUpperCase();
   };
 
   if (loading) {
@@ -306,11 +422,14 @@ export default function ProjectDetailPage() {
                     <p className="text-(--color-text-muted)">Loading 3D Viewer...</p>
                   </div>
                 }>
-                  <ThreeViewer models={modelFiles} />
+                  <ThreeViewer
+                    models={modelFiles}
+                    onCollisionData={handleCollisionData}
+                  />
                 </Suspense>
               </div>
             )}
-            
+
             {/* File List - Bottom Left Overlay */}
             {modelFiles.length > 0 && (
               <div className="absolute bottom-4 left-4 max-w-xs z-20">
@@ -356,10 +475,10 @@ export default function ProjectDetailPage() {
                 </div>
               </div>
             )}
-            
+
             {/* 3D Viewer Controls - Top Right */}
             <div className="absolute top-4 right-4 flex flex-col gap-2 z-20">
-              <button 
+              <button
                 onClick={() => setShowUpload(!showUpload)}
                 className="p-2 rounded bg-[#12141b]/90 border border-(--color-border-primary) hover:bg-(--color-input-bg) transition-colors text-(--color-text-muted) hover:text-(--color-text-light)"
                 title="Upload new model"
@@ -370,7 +489,7 @@ export default function ProjectDetailPage() {
                 <Maximize2 size={18} />
               </button>
             </div>
-            
+
             {/* Upload overlay when showUpload is true but files exist */}
             {showUpload && modelFiles.length > 0 && (
               <div className="absolute inset-0 bg-[#1e2127]/95 flex items-center justify-center p-8 z-30">
@@ -424,7 +543,18 @@ export default function ProjectDetailPage() {
               <Bot size={18} className="text-(--color-accent-blue)" />
               <h3 className="text-(--color-text-primary) font-semibold text-sm">AI Assistant</h3>
             </div>
-            
+
+            {/* Node Name Input */}
+            <div className="mb-3">
+              <input
+                type="text"
+                value={selectedNodeName}
+                onChange={(e) => setSelectedNodeName(e.target.value)}
+                placeholder="Node name (e.g. body_frame)"
+                className="w-full px-3 py-1.5 rounded-md bg-(--color-input-bg) border border-(--color-input-border) text-(--color-text-primary) text-xs outline-none placeholder:text-(--color-text-muted) focus:border-(--color-accent-blue)"
+              />
+            </div>
+
             {/* AI Chat Messages */}
             <div className="flex-1 overflow-y-auto mb-3 space-y-3 pr-1 custom-scrollbar">
               {aiMessages.length === 0 ? (
@@ -434,14 +564,14 @@ export default function ProjectDetailPage() {
                     <span className="text-(--color-text-light) text-xs font-medium">SIMVEX AI Coach</span>
                   </div>
                   <p className="text-(--color-text-muted) text-xs leading-relaxed">
-                    Hello! I&apos;m your AI assistant. Ask me anything about 3D modeling, project management, or how to use SIMVEX.
+                    안녕하세요! AI 어시스턴트입니다. 3D 모델의 특정 노드에 대해 질문해보세요.
                   </p>
                 </div>
               ) : (
                 aiMessages.map((msg) => (
                   <div key={msg.id} className={`p-3 rounded-lg ${
-                    msg.role === 'assistant' 
-                      ? 'bg-(--color-input-bg) border border-(--color-border-primary)' 
+                    msg.role === 'assistant'
+                      ? 'bg-(--color-input-bg) border border-(--color-border-primary)'
                       : 'bg-(--color-accent-blue)/10 border border-(--color-accent-blue)/30'
                   }`}>
                     <div className="flex items-center gap-2 mb-2">
@@ -484,7 +614,7 @@ export default function ProjectDetailPage() {
                   type="text"
                   value={aiQuestion}
                   onChange={(e) => setAiQuestion(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendAiQuestion()}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSendAiQuestion()}
                   placeholder="Ask AI..."
                   className="flex-1 px-3 py-2 rounded-md bg-(--color-input-bg) border border-(--color-input-border) text-(--color-text-primary) text-xs outline-none placeholder:text-(--color-text-muted) focus:border-(--color-accent-blue)"
                 />
@@ -502,8 +632,15 @@ export default function ProjectDetailPage() {
 
           {/* Project Chat */}
           <div className="flex-1 flex flex-col p-4 min-h-0">
-            <h3 className="text-(--color-text-primary) font-semibold text-sm mb-3">Project Chat</h3>
-            
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-(--color-text-primary) font-semibold text-sm">Project Chat</h3>
+              {connected ? (
+                <span className="w-2 h-2 rounded-full bg-green-500" title="Connected" />
+              ) : (
+                <span className="w-2 h-2 rounded-full bg-red-500" title="Disconnected" />
+              )}
+            </div>
+
             {/* Chat Messages */}
             <div className="flex-1 overflow-y-auto mb-3 space-y-3 pr-1 custom-scrollbar">
               {loadingChat ? (
@@ -518,22 +655,35 @@ export default function ProjectDetailPage() {
                 chatMessages.map((msg) => (
                   <div key={msg.id} className="group">
                     <div className="flex items-center gap-2 mb-1">
-                      <div 
+                      <div
                         className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium bg-(--color-accent-blue)"
                       >
-                        U
+                        {getMessageInitial(msg)}
                       </div>
-                      <span className="text-(--color-text-light) text-xs font-medium">User</span>
+                      <span className="text-(--color-text-light) text-xs font-medium">
+                        {getMessageDisplayName(msg)}
+                      </span>
                       <span className="text-(--color-text-muted) text-[10px]">
                         {new Date(msg.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                       </span>
+                      {msg.editedAt && (
+                        <span className="text-(--color-text-muted) text-[10px]">(edited)</span>
+                      )}
                     </div>
                     <p className="text-(--color-text-secondary) text-xs leading-relaxed ml-8">
-                      {msg.isDeleted ? "(deleted)" : msg.content}
+                      {msg.deletedAt ? "(deleted)" : msg.content}
                     </p>
                   </div>
                 ))
               )}
+              {typingUsers.size > 0 && (
+                <div className="flex items-center gap-2 ml-8">
+                  <span className="text-(--color-text-muted) text-xs animate-pulse">
+                    Someone is typing...
+                  </span>
+                </div>
+              )}
+              <div ref={chatEndRef} />
             </div>
 
             {/* Chat Input */}
@@ -541,8 +691,8 @@ export default function ProjectDetailPage() {
               <input
                 type="text"
                 value={newChatMessage}
-                onChange={(e) => setNewChatMessage(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSendChatMessage()}
+                onChange={handleChatInputChange}
+                onKeyDown={(e) => e.key === 'Enter' && handleSendChatMessage()}
                 placeholder="Type a message..."
                 className="flex-1 px-3 py-2 rounded-md bg-(--color-input-bg) border border-(--color-input-border) text-(--color-text-primary) text-xs outline-none placeholder:text-(--color-text-muted) focus:border-(--color-accent-blue)"
               />

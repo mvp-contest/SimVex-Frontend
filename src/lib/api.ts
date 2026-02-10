@@ -1,4 +1,4 @@
-const API_BASE = "http://simvex-backend.dokploy.byeolki.me";
+export const API_BASE = "http://simvex-backend.dokploy.byeolki.me";
 
 async function request<T>(
   path: string,
@@ -14,42 +14,55 @@ async function request<T>(
     hasToken: !!token
   });
 
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options?.headers,
-    },
-  });
-
-  if (!res.ok) {
-    const contentType = res.headers.get("content-type");
-    let body: { message?: string; error?: string; rawError?: string } = {};
-
-    if (contentType?.includes("application/json")) {
-      body = await res.json().catch(() => ({}));
-    } else {
-      const text = await res.text().catch(() => "");
-      body = { rawError: text };
-    }
-    
-    console.error("API Error Details:", {
-      status: res.status,
-      statusText: res.statusText,
-      contentType,
-      body,
-      bodyString: JSON.stringify(body, null, 2),
-      url: `${API_BASE}${path}`,
-      requestBody: options?.body
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...options?.headers,
+      },
     });
-    
-    const errorMessage = body.message || body.error || body.rawError || `API error ${res.status}: ${res.statusText}`;
-    throw new Error(errorMessage);
-  }
 
-  const text = await res.text();
-  return text ? JSON.parse(text) : ({} as T);
+    if (!res.ok) {
+      const contentType = res.headers.get("content-type");
+      let body: { message?: string; error?: string; rawError?: string } = {};
+
+      if (contentType?.includes("application/json")) {
+        body = await res.json().catch(() => ({}));
+      } else {
+        const text = await res.text().catch(() => "");
+        body = { rawError: text };
+      }
+      
+      console.error("API Error Details:", {
+        status: res.status,
+        statusText: res.statusText,
+        contentType,
+        body,
+        bodyString: JSON.stringify(body, null, 2),
+        url: `${API_BASE}${path}`,
+        requestBody: options?.body
+      });
+      
+      const errorMessage = body.message || body.error || body.rawError || `API error ${res.status}: ${res.statusText}`;
+      throw new Error(errorMessage);
+    }
+
+    const text = await res.text();
+    return text ? JSON.parse(text) : ({} as T);
+  } catch (error) {
+    // Network error or fetch failure
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      console.error("Network Error:", {
+        url: `${API_BASE}${path}`,
+        error: error.message,
+        suggestion: "백엔드 서버가 실행 중인지 확인하거나 네트워크 연결을 확인하세요."
+      });
+      throw new Error(`네트워크 연결 실패: ${API_BASE}${path}`);
+    }
+    throw error;
+  }
 }
 
 // ── Auth ──
@@ -195,11 +208,29 @@ export const projects = {
   list: (userId: string) => request<Project[]>(`/projects/user/${userId}`),
   listByTeam: (teamId: string) => request<Project[]>(`/projects/team/${teamId}`),
   get: (id: string) => request<Project>(`/projects/${id}`),
-  create: (teamId: string, name: string, creatorId: string) =>
-    request<Project>('/projects', {
+  create: async (teamId: string, name: string, creatorId: string) => {
+    const formData = new FormData();
+    formData.append('teamId', teamId);
+    formData.append('name', name);
+    formData.append('creatorId', creatorId);
+    
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    
+    const res = await fetch(`${API_BASE}/projects`, {
       method: 'POST',
-      body: JSON.stringify({ teamId, name, creatorId }),
-    }),
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+    
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ message: 'Failed to create project' }));
+      throw new Error(error.message || `HTTP ${res.status}`);
+    }
+    
+    return res.json();
+  },
   update: (id: string, name: string) =>
     request<Project>(`/projects/${id}`, {
       method: 'PATCH',
@@ -228,13 +259,28 @@ export const projects = {
 };
 
 // ── Chats ──
+export interface ChatMessageUser {
+  id: string;
+  personalId: string;
+  profile: {
+    id: string;
+    nickname: string;
+    aboutUs?: string;
+    avatar?: string;
+  };
+}
+
 export interface ChatMessage {
   id: string;
   chatId: string;
   userId: string;
   content: string;
   targetId?: string;
-  isDeleted: boolean;
+  editedAt?: string;
+  deletedAt?: string;
+  isDeleted?: boolean;
+  user?: ChatMessageUser;
+  targetMessage?: ChatMessage | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -300,13 +346,13 @@ export const memos = {
 
 // ── AI ──
 export interface AiResponse {
-  answer: string;
+  response: string;
 }
 
 export const ai = {
-  ask: (question: string, context?: string) =>
-    request<AiResponse>('/ai/ask', {
+  askNode: (projectId: string, nodeName: string, content: string) =>
+    request<AiResponse>(`/projects/${projectId}/${nodeName}/question`, {
       method: 'POST',
-      body: JSON.stringify({ question, context }),
+      body: JSON.stringify({ content }),
     }),
 };

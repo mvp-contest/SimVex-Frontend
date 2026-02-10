@@ -9,12 +9,12 @@ import Pagination from "@/components/dashboard/Pagination";
 const mockProjects = [
   {
     id: "1",
-    name: "SV Renderer",
-    owner: "Kang sang-woo",
+    name: "3D Design Project",
+    owner: "Team Lead",
     memberCount: 5,
     viewCount: 27,
     updatedAt: "Apr 22, 2024",
-    thumbnailUrl: "/images/simvex-logo.png",
+    thumbnailUrl: "/SIMVEX_logo_2.svg",
   },
 ];
 

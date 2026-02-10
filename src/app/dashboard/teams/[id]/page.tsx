@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { teams as teamsApi, projects as projectsApi, type Team, type Project } from "@/lib/api";
+import { teams as teamsApi, projects as projectsApi, chats as chatsApi, type Team, type Project, type Chat, type ChatMessage } from "@/lib/api";
 import { useAuth } from "@/app/context/AuthContext";
+import { useSocket } from "@/hooks/useSocket";
 import Button from "@/components/ui/Button";
 import TextInput from "@/components/ui/TextInput";
-import { Search, Plus, Trash2, Copy, RefreshCw, ChevronDown, UserX, Box } from "lucide-react";
+import { Search, Plus, Trash2, Copy, RefreshCw, ChevronDown, UserX, Box, Send } from "lucide-react";
 
 export default function TeamDetailPage() {
   const params = useParams();
@@ -25,10 +26,73 @@ export default function TeamDetailPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
 
+  // Team Chat state
+  const [chat, setChat] = useState<Chat | null>(null);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [newChatMessage, setNewChatMessage] = useState("");
+  const [loadingChat, setLoadingChat] = useState(false);
+  const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // WebSocket event handlers
+  const handleNewMessage = useCallback((message: ChatMessage) => {
+    setChatMessages(prev => {
+      if (prev.some(m => m.id === message.id)) return prev;
+      return [...prev, message];
+    });
+  }, []);
+
+  const handleMessageEdited = useCallback((message: ChatMessage) => {
+    setChatMessages(prev =>
+      prev.map(m => m.id === message.id ? { ...m, content: message.content, editedAt: message.editedAt } : m)
+    );
+  }, []);
+
+  const handleMessageDeleted = useCallback((data: { id: string }) => {
+    setChatMessages(prev =>
+      prev.map(m => m.id === data.id ? { ...m, deletedAt: new Date().toISOString() } : m)
+    );
+  }, []);
+
+  const handleUserTyping = useCallback((data: { userId: string; isTyping: boolean }) => {
+    if (data.userId === user?.id) return;
+    setTypingUsers(prev => {
+      const next = new Set(prev);
+      if (data.isTyping) {
+        next.add(data.userId);
+      } else {
+        next.delete(data.userId);
+      }
+      return next;
+    });
+  }, [user?.id]);
+
+  // Socket connection
+  const { connected, sendMessage, sendTyping } = useSocket({
+    chatId: chat?.id ?? null,
+    onNewMessage: handleNewMessage,
+    onMessageEdited: handleMessageEdited,
+    onMessageDeleted: handleMessageDeleted,
+    onUserTyping: handleUserTyping,
+  });
+
+  // Auto-scroll chat to bottom
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages]);
+
   useEffect(() => {
     loadTeam();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teamId]);
+
+  useEffect(() => {
+    if (teamId && activeTab === 'chat') {
+      loadOrCreateChat();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [teamId, activeTab]);
 
   const loadTeam = async () => {
     try {
@@ -46,6 +110,99 @@ export default function TeamDetailPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadOrCreateChat = async () => {
+    if (!teamId) return;
+    try {
+      setLoadingChat(true);
+      const chats = await chatsApi.listByTeam(teamId);
+      if (chats.length > 0) {
+        setChat(chats[0]);
+        await loadChatMessages(chats[0].id);
+      } else {
+        const newChat = await chatsApi.create(teamId);
+        setChat(newChat);
+      }
+    } catch (err) {
+      console.error("Failed to load chat:", err);
+      setChat(null);
+      setChatMessages([]);
+    } finally {
+      setLoadingChat(false);
+    }
+  };
+
+  const loadChatMessages = async (chatId: string) => {
+    try {
+      const messages = await chatsApi.getMessages(chatId);
+      setChatMessages(messages);
+    } catch (err) {
+      console.error("Failed to load messages:", err);
+      setChatMessages([]);
+    }
+  };
+
+  const handleSendChatMessage = () => {
+    if (!newChatMessage.trim() || !chat || !user?.id) return;
+
+    const optimisticMessage: ChatMessage = {
+      id: `temp-${Date.now()}`,
+      chatId: chat.id,
+      userId: user.id,
+      content: newChatMessage,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      user: {
+        id: user.id,
+        personalId: user.personalId,
+        profile: {
+          id: user.id,
+          nickname: user.nickname,
+        },
+      },
+    };
+
+    setChatMessages(prev => [...prev, optimisticMessage]);
+
+    if (connected) {
+      sendMessage(user.id, newChatMessage);
+      setNewChatMessage("");
+      sendTyping(user.id, false);
+    } else {
+      chatsApi.sendMessage(chat.id, user.id, newChatMessage).then(() => {
+        setNewChatMessage("");
+        loadChatMessages(chat.id);
+      }).catch((err) => {
+        console.error("Failed to send message:", err);
+        setChatMessages(prev => prev.filter(m => m.id !== optimisticMessage.id));
+      });
+    }
+  };
+
+  const handleChatInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewChatMessage(e.target.value);
+    if (!user?.id) return;
+
+    sendTyping(user.id, true);
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    typingTimeoutRef.current = setTimeout(() => {
+      sendTyping(user.id, false);
+    }, 2000);
+  };
+
+  const getMessageDisplayName = (msg: ChatMessage) => {
+    if (msg.user?.profile?.nickname) return msg.user.profile.nickname;
+    if (msg.user?.personalId) return msg.user.personalId;
+    return "User";
+  };
+
+  const getMessageInitial = (msg: ChatMessage) => {
+    const name = getMessageDisplayName(msg);
+    return name.charAt(0).toUpperCase();
   };
 
   const handleCreateProject = async () => {
@@ -394,7 +551,7 @@ export default function TeamDetailPage() {
                 >
                   <div className="relative h-[120px] bg-[#12141b] flex items-center justify-center border-b border-(--color-card-border)">
                     <Image
-                      src="/icons/brand/cube-preview.svg"
+                      src="/SIMVEX_logo_2.svg"
                       alt="Project"
                       width={80}
                       height={80}
@@ -429,9 +586,89 @@ export default function TeamDetailPage() {
           )}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-(--color-border-primary) rounded-xl bg-(--color-card-bg)/30">
-          <p className="text-(--color-text-secondary) font-medium">Chat feature coming soon.</p>
-          <p className="text-(--color-text-muted) text-sm mt-1">Communicate with your team in real-time.</p>
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-(--color-card-bg) border border-(--color-border-primary) rounded-xl overflow-hidden flex flex-col" style={{ height: '600px' }}>
+            {/* Chat Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-(--color-border-primary) bg-(--color-header-bg)">
+              <h3 className="text-(--color-text-primary) font-semibold">Team Chat</h3>
+              {connected ? (
+                <span className="flex items-center gap-2 text-xs text-(--color-text-muted)">
+                  <span className="w-2 h-2 rounded-full bg-green-500" />
+                  Connected
+                </span>
+              ) : (
+                <span className="flex items-center gap-2 text-xs text-(--color-text-muted)">
+                  <span className="w-2 h-2 rounded-full bg-red-500" />
+                  Disconnected
+                </span>
+              )}
+            </div>
+
+            {/* Chat Messages */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+              {loadingChat ? (
+                <div className="flex justify-center items-center h-full">
+                  <p className="text-(--color-text-muted) text-sm">Loading chat...</p>
+                </div>
+              ) : chatMessages.length === 0 ? (
+                <div className="flex flex-col justify-center items-center h-full text-(--color-text-muted)">
+                  <p className="text-sm">No messages yet</p>
+                  <p className="text-xs mt-1">Start a conversation with your team</p>
+                </div>
+              ) : (
+                chatMessages.map((msg) => (
+                  <div key={msg.id} className="group">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium bg-(--color-accent-blue)">
+                        {getMessageInitial(msg)}
+                      </div>
+                      <span className="text-(--color-text-light) text-sm font-medium">
+                        {getMessageDisplayName(msg)}
+                      </span>
+                      <span className="text-(--color-text-muted) text-xs">
+                        {new Date(msg.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                      </span>
+                      {msg.editedAt && (
+                        <span className="text-(--color-text-muted) text-xs">(edited)</span>
+                      )}
+                    </div>
+                    <p className="text-(--color-text-secondary) text-sm leading-relaxed ml-10">
+                      {msg.deletedAt ? "(deleted)" : msg.content}
+                    </p>
+                  </div>
+                ))
+              )}
+              {typingUsers.size > 0 && (
+                <div className="flex items-center gap-2 ml-10">
+                  <span className="text-(--color-text-muted) text-xs animate-pulse">
+                    Someone is typing...
+                  </span>
+                </div>
+              )}
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Chat Input */}
+            <div className="px-6 py-4 border-t border-(--color-border-primary) bg-(--color-header-bg)">
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  value={newChatMessage}
+                  onChange={handleChatInputChange}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSendChatMessage()}
+                  placeholder="Type a message..."
+                  className="flex-1 px-4 py-2 rounded-lg bg-(--color-input-bg) border border-(--color-input-border) text-(--color-text-primary) text-sm outline-none placeholder:text-(--color-text-muted) focus:border-(--color-accent-blue)"
+                />
+                <Button
+                  onClick={handleSendChatMessage}
+                  disabled={!newChatMessage.trim()}
+                  className="px-4"
+                >
+                  <Send size={18} />
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
