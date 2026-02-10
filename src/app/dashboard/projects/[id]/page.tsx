@@ -45,6 +45,9 @@ export default function ProjectDetailPage() {
   const [currentModelIndex, setCurrentModelIndex] = useState<number>(0);
   const [showUpload, setShowUpload] = useState(true);
   const [selectedNodeName, setSelectedNodeName] = useState<string>("default");
+  const [selectedPartName, setSelectedPartName] = useState<string | null>(null);
+  const [partDescription, setPartDescription] = useState<string>("");
+  const [loadingPartDescription, setLoadingPartDescription] = useState(false);
 
   // Collision detection callback (data from ThreeViewer)
   const handleCollisionData = useCallback((data: { count: number; collidingIds: Set<string> }) => {
@@ -52,16 +55,6 @@ export default function ProjectDetailPage() {
     console.log('Collision data:', data.count, 'collisions');
   }, []);
 
-  // AI Assistant state
-  const [aiQuestion, setAiQuestion] = useState("");
-  interface AiMessage {
-    id: string;
-    role: 'user' | 'assistant';
-    content: string;
-    timestamp: Date;
-  }
-  const [aiMessages, setAiMessages] = useState<AiMessage[]>([]);
-  const [aiLoading, setAiLoading] = useState(false);
 
   // Project Chat state
   const [chat, setChat] = useState<Chat | null>(null);
@@ -139,6 +132,29 @@ export default function ProjectDetailPage() {
       const data = await projectsApi.get(projectId);
       setProject(data);
       setProjectName(data.name);
+
+      // Load project files from server
+      try {
+        const projectFiles = await projectsApi.getFiles(projectId);
+        if (projectFiles.glbFiles && projectFiles.glbFiles.length > 0) {
+          const serverModels: ModelFile[] = projectFiles.glbFiles.map((url, index) => {
+            const fileName = url.split('/').pop() || `model-${index}`;
+            const extension = fileName.split('.').pop()?.toLowerCase() || 'glb';
+            const type = extension === 'obj' ? 'obj' : extension === 'stl' ? 'stl' : 'gltf';
+
+            return {
+              id: `server-${Date.now()}-${index}`,
+              name: fileName,
+              url: url,
+              type: type as 'gltf' | 'obj' | 'stl',
+            };
+          });
+          setModelFiles(serverModels);
+        }
+      } catch (fileErr) {
+        console.log("No files found for this project or failed to load files");
+      }
+
       await projectsApi.updateLastAccessed(projectId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load project");
@@ -199,6 +215,108 @@ export default function ProjectDetailPage() {
       await loadProject();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to update project name");
+    }
+  };
+
+  const handleGetPartDescription = async () => {
+    if (!selectedPartName || !projectId) return;
+    
+    try {
+      setLoadingPartDescription(true);
+      setPartDescription("");
+      
+      // Remove file extension from part name (e.g., "part.glb" -> "part")
+      const nodeName = selectedPartName.replace(/\.(glb|gltf|obj|stl)$/i, '');
+      
+      console.log("Fetching AI description for:", nodeName, "(original:", selectedPartName, ") in project:", projectId);
+      
+      // Ask AI for description (AI server will fetch metadata from R2 CDN)
+      const aiResponse = await projectsApi.askNodeQuestion(
+        projectId,
+        nodeName,
+        `${nodeName} 부품에 대해 자세히 설명해주세요. 이 부품의 기능, 특징, 용도 등을 포함해서 설명해주세요.`
+      );
+      console.log("AI response received:", aiResponse);
+      
+      // Handle different response formats
+      let description = "";
+      
+      // Check for error responses first
+      if (aiResponse.detail) {
+        // This is an error response
+        if (aiResponse.detail.includes("Metadata not found")) {
+          throw new Error("Metadata not found for project");
+        }
+        throw new Error(aiResponse.detail);
+      }
+      
+      // Handle success responses
+      if (typeof aiResponse === 'string') {
+        description = aiResponse;
+      } else if (aiResponse.answer) {
+        description = aiResponse.answer;
+      } else if (aiResponse.response) {
+        description = aiResponse.response;
+      } else if (aiResponse.message) {
+        description = aiResponse.message;
+      } else {
+        description = JSON.stringify(aiResponse, null, 2);
+      }
+      
+      setPartDescription(description || "설명을 가져올 수 없습니다.");
+    } catch (err) {
+      console.error("Failed to get part description:", err);
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      
+      // Handle metadata not found error - provide analysis based on part name
+      if (errorMessage.includes("Metadata not found") || errorMessage.includes("Project or folder not found")) {
+        const nodeName = selectedPartName.replace(/\.(glb|gltf|obj|stl)$/i, '');
+        
+        // Analyze part name and provide intelligent description
+        let analysis = `🔍 부품 이름 분석: ${nodeName}\n\n`;
+        
+        const lowerName = nodeName.toLowerCase();
+        
+        if (lowerName.includes('gear')) {
+          analysis += `⚙️ 기어 부품\n\n`;
+          analysis += `이 부품은 기어(Gear) 구조를 포함하고 있습니다.\n\n`;
+          analysis += `일반적인 기능:\n`;
+          analysis += `• 회전 운동 전달\n`;
+          analysis += `• 속도 및 토크 변환\n`;
+          analysis += `• 동력 전달 시스템의 핵심 부품\n\n`;
+          
+          if (lowerName.includes('arm')) {
+            analysis += `🦾 암(Arm) 연결 기어\n`;
+            analysis += `• 로봇 팔이나 기계 암의 관절 부분에 사용\n`;
+            analysis += `• 정밀한 각도 제어 가능\n`;
+            analysis += `• 구동부와 암 구조를 연결\n`;
+          }
+        } else if (lowerName.includes('arm')) {
+          analysis += `🦾 암(Arm) 구조 부품\n\n`;
+          analysis += `• 로봇이나 기계의 팔 구조\n`;
+          analysis += `• 물체를 잡거나 이동시키는 기능\n`;
+          analysis += `• 여러 관절로 구성 가능\n`;
+        } else if (lowerName.includes('motor')) {
+          analysis += `⚡ 모터 부품\n\n`;
+          analysis += `• 전기 에너지를 회전 운동으로 변환\n`;
+          analysis += `• 구동 장치의 핵심\n`;
+        } else if (lowerName.includes('shaft')) {
+          analysis += `📏 샤프트(축) 부품\n\n`;
+          analysis += `• 회전 운동 전달\n`;
+          analysis += `• 베어링과 함께 사용\n`;
+        } else {
+          analysis += `📦 기계 부품\n\n`;
+          analysis += `부품 이름에서 구체적인 기능을 파악하기 어렵습니다.\n`;
+        }
+        
+        setPartDescription(analysis);
+      } else if (errorMessage.includes("not found")) {
+        setPartDescription(`"${selectedPartName}" 부품을 찾을 수 없습니다.\n\n프로젝트에 meta_data.json 파일이 업로드되어 있는지 확인해주세요.`);
+      } else {
+        setPartDescription(`부품 설명을 가져오는데 실패했습니다.\n\n에러: ${errorMessage}`);
+      }
+    } finally {
+      setLoadingPartDescription(false);
     }
   };
 
@@ -282,59 +400,53 @@ export default function ProjectDetailPage() {
     }, 2000);
   };
 
-  const handleSendAiQuestion = async () => {
-    if (!aiQuestion.trim()) return;
-
-    const userMessage: AiMessage = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: aiQuestion,
-      timestamp: new Date()
-    };
-
-    setAiMessages(prev => [...prev, userMessage]);
-    setAiQuestion("");
-    setAiLoading(true);
-
+  const handleFileSelect = async (files: Array<{file: File, url: string, type: 'gltf' | 'obj' | 'stl'}>) => {
     try {
-      const nodeName = selectedNodeName || "default";
-      const response = await aiApi.askNode(projectId, nodeName, userMessage.content);
+      // Upload files to server
+      const fileObjects = files.map(f => f.file);
+      await projectsApi.uploadFiles(projectId, fileObjects);
+      
+      // Reload project files from server
+      const projectFiles = await projectsApi.getFiles(projectId);
+      
+      // Convert server URLs to model files
+      const serverModels: ModelFile[] = projectFiles.glbFiles.map((url, index) => {
+        const fileName = url.split('/').pop() || `model-${index}`;
+        const extension = fileName.split('.').pop()?.toLowerCase() || 'glb';
+        const type = extension === 'obj' ? 'obj' : extension === 'stl' ? 'stl' : 'gltf';
+        
+        return {
+          id: `server-${Date.now()}-${index}`,
+          name: fileName,
+          url: url,
+          type: type as 'gltf' | 'obj' | 'stl',
+        };
+      });
+      
+      setModelFiles(serverModels);
+      setCurrentModelIndex(serverModels.length - 1);
+      setShowUpload(false);
+      
+      alert('파일이 성공적으로 업로드되었습니다!');
+    } catch (err) {
+      console.error('Failed to upload files:', err);
+      alert(err instanceof Error ? err.message : '파일 업로드에 실패했습니다.');
+      
+      // Fallback: use local URLs
+      const newModels: ModelFile[] = files.map((fileData, index) => ({
+        id: `${Date.now()}-${index}`,
+        name: fileData.file.name,
+        url: fileData.url,
+        type: fileData.type,
+      }));
 
-      const aiResponse: AiMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: response.response,
-        timestamp: new Date()
-      };
-      setAiMessages(prev => [...prev, aiResponse]);
-    } catch (error) {
-      console.error('AI API error:', error);
-      const errorResponse: AiMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: "죄송합니다. 현재 AI 서비스에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.",
-        timestamp: new Date()
-      };
-      setAiMessages(prev => [...prev, errorResponse]);
-    } finally {
-      setAiLoading(false);
+      setModelFiles(prev => {
+        const newFiles = [...prev, ...newModels];
+        setCurrentModelIndex(newFiles.length - 1);
+        return newFiles;
+      });
+      setShowUpload(false);
     }
-  };
-
-  const handleFileSelect = (files: Array<{file: File, url: string, type: 'gltf' | 'obj' | 'stl'}>) => {
-    const newModels: ModelFile[] = files.map((fileData, index) => ({
-      id: `${Date.now()}-${index}`,
-      name: fileData.file.name,
-      url: fileData.url,
-      type: fileData.type,
-    }));
-
-    setModelFiles(prev => {
-      const newFiles = [...prev, ...newModels];
-      setCurrentModelIndex(newFiles.length - 1);
-      return newFiles;
-    });
-    setShowUpload(false);
   };
 
   const handleRemoveModel = (index: number) => {
@@ -398,7 +510,7 @@ export default function ProjectDetailPage() {
           onBlur={handleSaveProjectName}
           className="text-lg font-medium text-(--color-text-primary) bg-transparent border-none outline-none focus:ring-1 focus:ring-(--color-accent-blue) rounded px-2"
         />
-        <Button size="sm">
+        <Button size="sm" onClick={handleSaveProjectName}>
           Save Changes
         </Button>
       </div>
@@ -425,6 +537,10 @@ export default function ProjectDetailPage() {
                   <ThreeViewer
                     models={modelFiles}
                     onCollisionData={handleCollisionData}
+                    onPartSelect={(partName) => {
+                      setSelectedPartName(partName);
+                      setPartDescription("");
+                    }}
                   />
                 </Suspense>
               </div>
@@ -541,92 +657,53 @@ export default function ProjectDetailPage() {
           <div className="flex-1 flex flex-col p-4 border-b border-(--color-border-primary) min-h-0">
             <div className="flex items-center gap-2 mb-3">
               <Bot size={18} className="text-(--color-accent-blue)" />
-              <h3 className="text-(--color-text-primary) font-semibold text-sm">AI Assistant</h3>
+              <h3 className="text-(--color-text-primary) font-semibold text-sm">Part Information</h3>
             </div>
 
-            {/* Node Name Input */}
+            {/* Selected Part Display */}
             <div className="mb-3">
-              <input
-                type="text"
-                value={selectedNodeName}
-                onChange={(e) => setSelectedNodeName(e.target.value)}
-                placeholder="Node name (e.g. body_frame)"
-                className="w-full px-3 py-1.5 rounded-md bg-(--color-input-bg) border border-(--color-input-border) text-(--color-text-primary) text-xs outline-none placeholder:text-(--color-text-muted) focus:border-(--color-accent-blue)"
-              />
+              <label className="text-(--color-text-muted) text-xs mb-1 block">Selected Part</label>
+              <div className="px-3 py-2 rounded-md bg-(--color-input-bg) border border-(--color-input-border) text-(--color-text-primary) text-xs">
+                {selectedPartName || "Click a part in 3D viewer"}
+              </div>
             </div>
 
-            {/* AI Chat Messages */}
-            <div className="flex-1 overflow-y-auto mb-3 space-y-3 pr-1 custom-scrollbar">
-              {aiMessages.length === 0 ? (
+            {/* Get AI Description Button */}
+            {selectedPartName && (
+              <Button
+                onClick={handleGetPartDescription}
+                disabled={loadingPartDescription}
+                size="sm"
+                className="mb-3 w-full"
+              >
+                <Bot size={16} className="mr-2" />
+                {loadingPartDescription ? "Loading..." : "Get AI Description"}
+              </Button>
+            )}
+
+            {/* Part Description Display */}
+            <div className="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar">
+              {partDescription ? (
                 <div className="p-3 rounded-lg bg-(--color-input-bg) border border-(--color-border-primary)">
                   <div className="flex items-center gap-2 mb-2">
                     <Bot size={16} className="text-(--color-accent-blue)" />
-                    <span className="text-(--color-text-light) text-xs font-medium">SIMVEX AI Coach</span>
+                    <span className="text-(--color-text-light) text-xs font-medium">AI Description</span>
                   </div>
-                  <p className="text-(--color-text-muted) text-xs leading-relaxed">
-                    안녕하세요! AI 어시스턴트입니다. 3D 모델의 특정 노드에 대해 질문해보세요.
+                  <p className="text-(--color-text-secondary) text-xs leading-relaxed whitespace-pre-wrap">
+                    {partDescription}
                   </p>
                 </div>
               ) : (
-                aiMessages.map((msg) => (
-                  <div key={msg.id} className={`p-3 rounded-lg ${
-                    msg.role === 'assistant'
-                      ? 'bg-(--color-input-bg) border border-(--color-border-primary)'
-                      : 'bg-(--color-accent-blue)/10 border border-(--color-accent-blue)/30'
-                  }`}>
-                    <div className="flex items-center gap-2 mb-2">
-                      {msg.role === 'assistant' ? (
-                        <>
-                          <Bot size={14} className="text-(--color-accent-blue)" />
-                          <span className="text-(--color-text-light) text-xs font-medium">AI Coach</span>
-                        </>
-                      ) : (
-                        <>
-                          <div className="w-4 h-4 rounded-full bg-(--color-accent-blue) flex items-center justify-center text-white text-[10px] font-medium">
-                            U
-                          </div>
-                          <span className="text-(--color-text-light) text-xs font-medium">You</span>
-                        </>
-                      )}
-                      <span className="text-(--color-text-muted) text-[10px] ml-auto">
-                        {msg.timestamp.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                      </span>
-                    </div>
-                    <p className="text-(--color-text-secondary) text-xs leading-relaxed whitespace-pre-wrap">
-                      {msg.content}
-                    </p>
-                  </div>
-                ))
-              )}
-              {aiLoading && (
                 <div className="p-3 rounded-lg bg-(--color-input-bg) border border-(--color-border-primary)">
-                  <div className="flex items-center gap-2">
-                    <Bot size={14} className="text-(--color-accent-blue) animate-pulse" />
-                    <span className="text-(--color-text-muted) text-xs">AI is thinking...</span>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Bot size={16} className="text-(--color-accent-blue)" />
+                    <span className="text-(--color-text-light) text-xs font-medium">SIMVEX AI</span>
                   </div>
+                  <p className="text-(--color-text-muted) text-xs leading-relaxed">
+                    3D 뷰어에서 부품을 클릭하고 "Get AI Description" 버튼을 눌러 부품 설명을 확인하세요.
+                  </p>
                 </div>
               )}
-            </div>
-
-            <div className="mt-auto">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={aiQuestion}
-                  onChange={(e) => setAiQuestion(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSendAiQuestion()}
-                  placeholder="Ask AI..."
-                  className="flex-1 px-3 py-2 rounded-md bg-(--color-input-bg) border border-(--color-input-border) text-(--color-text-primary) text-xs outline-none placeholder:text-(--color-text-muted) focus:border-(--color-accent-blue)"
-                />
-                <Button
-                  onClick={handleSendAiQuestion}
-                  size="sm"
-                  className="px-3"
-                  disabled={!aiQuestion.trim() || aiLoading}
-                >
-                  <Send size={14} />
-                </Button>
-              </div>
             </div>
           </div>
 

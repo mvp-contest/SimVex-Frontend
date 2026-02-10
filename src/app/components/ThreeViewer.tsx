@@ -21,6 +21,7 @@ interface ModelData {
 export interface ThreeViewerProps {
   models: ModelData[];
   onCollisionData?: (data: { count: number; collidingIds: Set<string> }) => void;
+  onPartSelect?: (partName: string) => void;
 }
 
 interface ModelProps {
@@ -222,7 +223,7 @@ function CollisionManager({
   );
 }
 
-export default function ThreeViewer({ models, onCollisionData }: ThreeViewerProps) {
+export default function ThreeViewer({ models, onCollisionData, onPartSelect }: ThreeViewerProps) {
   const [modelPositions, setModelPositions] = useState<Record<string, [number, number, number]>>({});
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const [showControls, setShowControls] = useState(false);
@@ -334,8 +335,9 @@ export default function ThreeViewer({ models, onCollisionData }: ThreeViewerProp
             isSelected={selectedModel === model.id}
             isColliding={collisionEnabled && collidingIds.has(model.id)}
             onClick={() => {
-              console.log('Model clicked:', model.id);
+              console.log('Model clicked:', model.id, 'name:', model.name);
               setSelectedModel(model.id);
+              onPartSelect?.(model.name);
             }}
             meshRef={modelRefs.current[model.id] || { current: null }}
           />

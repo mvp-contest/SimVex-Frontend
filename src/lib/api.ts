@@ -256,6 +256,37 @@ export const projects = {
     request<void>(`/projects/${id}/access`, {
       method: 'PATCH',
     }),
+  getNodeData: (projectId: string, nodeName: string) =>
+    request<any>(`/projects/${projectId}/${nodeName}`),
+  askNodeQuestion: (projectId: string, nodeName: string, content: string) =>
+    request<any>(`/projects/${projectId}/${nodeName}/question`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    }),
+  uploadFiles: async (projectId: string, glbFiles: File[]) => {
+    const formData = new FormData();
+    glbFiles.forEach(file => {
+      formData.append('glbFiles', file);
+    });
+    
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    
+    const res = await fetch(`${API_BASE}/projects/${projectId}/files`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+    
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ message: 'Failed to upload files' }));
+      throw new Error(error.message || `HTTP ${res.status}`);
+    }
+    
+    return res.json();
+  },
+  getFiles: (projectId: string) => request<{ glbFiles: string[]; metaData?: string }>(`/projects/${projectId}/files`),
 };
 
 // ── Chats ──
