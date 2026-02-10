@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SimTheme",
-  description: "SimTheme - Create Your Account",
+  title: "SIMVEX",
+  description: "Collaborative 3D Design Platform",
 };
 
 export default function RootLayout({
