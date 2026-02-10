@@ -298,9 +298,11 @@ export const projects = {
     return res.json();
   },
   getFiles: (projectId: string) =>
-    request<{ id: string; name: string; folderUrl: string }>(
+    request<{ id: string; name: string; files: string[] }>(
       `/projects/${projectId}/files`,
     ),
+  getFileUrl: (projectId: string, fileName: string) =>
+    `${API_BASE}/projects/${projectId}/files/${fileName}`,
 };
 
 export interface ChatMessageUser {

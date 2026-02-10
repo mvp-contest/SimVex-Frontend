@@ -142,55 +142,34 @@ export default function ProjectDetailPage() {
 
       try {
         const projectFiles = await projectsApi.getFiles(projectId);
-        if (projectFiles?.folderUrl) {
-          const folderUrl = projectFiles.folderUrl;
-          const commonFileNames = [
-            "model.glb",
-            "model.gltf",
-            "scene.glb",
-            "scene.gltf",
-            "assembly.glb",
-          ];
+        if (projectFiles?.files && Array.isArray(projectFiles.files)) {
+          const models: ModelFile[] = projectFiles.files
+            .filter((fileName) => {
+              const ext = fileName.split(".").pop()?.toLowerCase();
+              return (
+                ext === "glb" ||
+                ext === "gltf" ||
+                ext === "obj" ||
+                ext === "stl"
+              );
+            })
+            .map((fileName, index) => {
+              const extension =
+                fileName.split(".").pop()?.toLowerCase() || "glb";
+              const type =
+                extension === "obj"
+                  ? "obj"
+                  : extension === "stl"
+                    ? "stl"
+                    : "gltf";
 
-          for (let i = 1; i <= 20; i++) {
-            commonFileNames.push(`part${i}.glb`);
-            commonFileNames.push(`part${i}.gltf`);
-            commonFileNames.push(`part${i}.obj`);
-            commonFileNames.push(`part${i}.stl`);
-          }
-
-          const models: ModelFile[] = [];
-
-          const checkPromises = commonFileNames.map(async (fileName) => {
-            if (fileName.endsWith(".json")) return;
-
-            const fileUrl = `${folderUrl}/${fileName}`;
-
-            try {
-              const response = await fetch(fileUrl, { method: "HEAD" });
-              if (response.ok) {
-                const extension =
-                  fileName.split(".").pop()?.toLowerCase() || "glb";
-                const type =
-                  extension === "obj"
-                    ? "obj"
-                    : extension === "stl"
-                      ? "stl"
-                      : "gltf";
-
-                models.push({
-                  id: `available-${Date.now()}-${models.length}`,
-                  name: fileName,
-                  url: fileUrl,
-                  type: type as "gltf" | "obj" | "stl",
-                });
-              }
-            } catch (err) {
-              return;
-            }
-          });
-
-          await Promise.all(checkPromises);
+              return {
+                id: `available-${Date.now()}-${index}`,
+                name: fileName,
+                url: projectsApi.getFileUrl(projectId, fileName),
+                type: type as "gltf" | "obj" | "stl",
+              };
+            });
 
           if (models.length > 0) {
             setAvailableFiles(models);
@@ -453,32 +432,7 @@ export default function ProjectDetailPage() {
       const fileObjects = files.map((f) => f.file);
       await projectsApi.uploadFiles(projectId, fileObjects);
 
-      const projectFiles = await projectsApi.getFiles(projectId);
-
-      if (projectFiles?.folderUrl) {
-        const folderUrl = projectFiles.folderUrl;
-        const uploadedFileNames = files
-          .filter((f) => !f.file.name.endsWith(".json"))
-          .map((f) => f.file.name);
-
-        const models: ModelFile[] = [];
-
-        for (const fileName of uploadedFileNames) {
-          const fileUrl = `${folderUrl}/${fileName}`;
-          const extension = fileName.split(".").pop()?.toLowerCase() || "glb";
-          const type =
-            extension === "obj" ? "obj" : extension === "stl" ? "stl" : "gltf";
-
-          models.push({
-            id: `available-${Date.now()}-${models.length}`,
-            name: fileName,
-            url: fileUrl,
-            type: type as "gltf" | "obj" | "stl",
-          });
-        }
-
-        setAvailableFiles((prev) => [...prev, ...models]);
-      }
+      await loadProject();
 
       setShowUpload(false);
 
