@@ -127,6 +127,7 @@ function SceneControls({ selectedModel, onDeselect, modelRefsRef }: SceneControl
     const orbitRef = useRef<any>(null);
     const transformRef = useRef<any>(null);
     const [mode, setMode] = useState<"translate" | "rotate" | "scale">("translate");
+    const [controlMode, setControlMode] = useState<"orbit" | "transform">("orbit");
 
     const selectedMeshRef = selectedModel ? modelRefsRef.current[selectedModel] : null;
 
@@ -146,10 +147,19 @@ function SceneControls({ selectedModel, onDeselect, modelRefsRef }: SceneControl
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
+            const tag = (e.target as HTMLElement).tagName;
+            if (tag === "INPUT" || tag === "TEXTAREA") return;
+
+            if (e.key === "v" || e.key === "V") {
+                setControlMode((prev) => (prev === "orbit" ? "transform" : "orbit"));
+            }
             if (e.key === "g" || e.key === "G") setMode("translate");
             if (e.key === "r" || e.key === "R") setMode("rotate");
             if (e.key === "s" || e.key === "S") setMode("scale");
-            if (e.key === "Escape") onDeselect();
+            if (e.key === "Escape") {
+                onDeselect();
+                setControlMode("orbit");
+            }
         };
 
         window.addEventListener("keydown", handleKeyDown);
@@ -165,8 +175,9 @@ function SceneControls({ selectedModel, onDeselect, modelRefsRef }: SceneControl
                 minDistance={0.5}
                 maxDistance={50}
                 zoomSpeed={1.5}
+                enabled={controlMode === "orbit"}
             />
-            {selectedModel && selectedMeshRef?.current && (
+            {controlMode === "transform" && selectedModel && selectedMeshRef?.current && (
                 <TransformControls
                     ref={transformRef}
                     mode={mode}
@@ -408,6 +419,10 @@ export default function ThreeViewer({ models, onCollisionData, onPartSelect }: T
                                     Select (orange)
                                 </p>
                                 <p>
+                                    • <span className="text-(--color-text-light)">V</span> = Toggle
+                                    View/Move
+                                </p>
+                                <p>
                                     • <span className="text-(--color-text-light)">G</span> = Move
                                 </p>
                                 <p>
@@ -415,6 +430,10 @@ export default function ThreeViewer({ models, onCollisionData, onPartSelect }: T
                                 </p>
                                 <p>
                                     • <span className="text-(--color-text-light)">S</span> = Scale
+                                </p>
+                                <p>
+                                    • <span className="text-(--color-text-light)">Scroll</span> =
+                                    Zoom
                                 </p>
                                 <p>
                                     • <span className="text-(--color-text-light)">Esc</span> =
