@@ -420,7 +420,7 @@ export default function ThreeViewer({ models, onCollisionData, onPartSelect }: T
                                 </p>
                                 <p>
                                     • <span className="text-(--color-text-light)">V</span> = Toggle
-                                    View/Move
+                                    View/Transform Mode
                                 </p>
                                 <p>
                                     • <span className="text-(--color-text-light)">G</span> = Move
