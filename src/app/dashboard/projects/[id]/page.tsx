@@ -96,6 +96,8 @@ export default function ProjectDetailPage() {
   const [showAiAssistant, setShowAiAssistant] = useState(false);
   const aiEndRef = useRef<HTMLDivElement>(null);
 
+  const [showChatPopup, setShowChatPopup] = useState(false);
+
   const handleCollisionData = useCallback(
     (data: { count: number; collidingIds: Set<string> }) => {},
     [],
@@ -1073,17 +1075,141 @@ export default function ProjectDetailPage() {
         </div>
       )}
 
-      {/* Floating Chat Button */}
-      <button
-        onClick={() => setShowAiAssistant(!showAiAssistant)}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-gradient-to-r from-(--color-accent-blue) to-purple-600 text-white shadow-lg hover:shadow-xl transition-all flex items-center justify-center z-50"
-        title="AI Assistant"
-      >
-        <MessageCircle size={24} />
-        {connected && (
-          <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-green-500 border-2 border-white" />
-        )}
-      </button>
+      {/* Floating Buttons */}
+      <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-50">
+        {/* AI Assistant Button */}
+        <button
+          onClick={() => setShowAiAssistant(!showAiAssistant)}
+          className="w-14 h-14 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg hover:shadow-xl transition-all flex items-center justify-center"
+          title="AI Assistant"
+        >
+          <Bot size={24} />
+        </button>
+
+        {/* Project Chat Button */}
+        <button
+          onClick={() => setShowChatPopup(!showChatPopup)}
+          className="w-14 h-14 rounded-full bg-gradient-to-r from-(--color-accent-blue) to-purple-600 text-white shadow-lg hover:shadow-xl transition-all flex items-center justify-center"
+          title="Project Chat"
+        >
+          <MessageCircle size={24} />
+          {connected && (
+            <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-green-500 border-2 border-white" />
+          )}
+        </button>
+      </div>
+
+      {/* Chat Popup (Channel Talk Style) */}
+      {showChatPopup && (
+        <div className="fixed bottom-24 right-6 w-96 h-[600px] bg-(--color-card-bg) border-2 border-(--color-border-primary) rounded-xl shadow-2xl z-50 flex flex-col">
+          {/* Chat Header */}
+          <div className="flex items-center justify-between p-4 border-b border-(--color-border-primary) bg-(--color-header-bg) rounded-t-xl">
+            <div>
+              <h3 className="text-(--color-text-primary) font-semibold">
+                Project Chat
+              </h3>
+              <p className="text-xs text-(--color-text-muted)">
+                {project?.name || "Loading..."}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {connected ? (
+                <span className="flex items-center gap-1 text-xs text-green-500">
+                  <span className="w-2 h-2 rounded-full bg-green-500" />
+                  Online
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-xs text-red-500">
+                  <span className="w-2 h-2 rounded-full bg-red-500" />
+                  Offline
+                </span>
+              )}
+              <button
+                onClick={() => setShowChatPopup(false)}
+                className="text-(--color-text-muted) hover:text-(--color-text-primary)"
+              >
+                <X size={20} />
+              </button>
+            </div>
+          </div>
+
+          {/* Chat Messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+            {loadingChat ? (
+              <div className="flex justify-center items-center h-full">
+                <p className="text-(--color-text-muted) text-sm">
+                  Loading chat...
+                </p>
+              </div>
+            ) : chatMessages.length === 0 ? (
+              <div className="flex flex-col justify-center items-center h-full text-(--color-text-muted)">
+                <MessageCircle size={48} className="mb-4 opacity-50" />
+                <p className="text-sm">No messages yet</p>
+                <p className="text-xs mt-1">
+                  Start a conversation with your team
+                </p>
+              </div>
+            ) : (
+              chatMessages.map((msg) => (
+                <div key={msg.id} className="group">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-medium bg-(--color-accent-blue)">
+                      {getMessageInitial(msg)}
+                    </div>
+                    <span className="text-(--color-text-light) text-sm font-medium">
+                      {getMessageDisplayName(msg)}
+                    </span>
+                    <span className="text-(--color-text-muted) text-xs">
+                      {new Date(msg.createdAt).toLocaleTimeString("en-US", {
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                    {msg.editedAt && (
+                      <span className="text-(--color-text-muted) text-xs">
+                        (edited)
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-(--color-text-secondary) text-sm leading-relaxed ml-9">
+                    {msg.deletedAt ? "(deleted)" : msg.content}
+                  </p>
+                </div>
+              ))
+            )}
+            {typingUsers.size > 0 && (
+              <div className="flex items-center gap-2 ml-9">
+                <span className="text-(--color-text-muted) text-xs animate-pulse">
+                  Someone is typing...
+                </span>
+              </div>
+            )}
+            <div ref={chatEndRef} />
+          </div>
+
+          {/* Chat Input */}
+          <div className="p-4 border-t border-(--color-border-primary) bg-(--color-header-bg)">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newChatMessage}
+                onChange={handleChatInputChange}
+                onKeyDown={(e) => e.key === "Enter" && handleSendChatMessage()}
+                placeholder="Type a message..."
+                className="flex-1 px-3 py-2 rounded-lg bg-(--color-input-bg) border border-(--color-input-border) text-(--color-text-primary) text-sm outline-none placeholder:text-(--color-text-muted) focus:border-(--color-accent-blue)"
+              />
+              <Button
+                onClick={handleSendChatMessage}
+                size="sm"
+                className="px-3"
+                disabled={!newChatMessage.trim()}
+              >
+                <Send size={16} />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
