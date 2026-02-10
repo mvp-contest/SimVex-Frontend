@@ -149,19 +149,20 @@ export default function ProjectDetailPage() {
             "model.gltf",
             "scene.glb",
             "scene.gltf",
-            "part1.glb",
-            "part2.glb",
-            "part3.glb",
-            "part4.glb",
-            "part5.glb",
             "assembly.glb",
-            "meta_data.json",
           ];
+
+          for (let i = 1; i <= 20; i++) {
+            commonFileNames.push(`part${i}.glb`);
+            commonFileNames.push(`part${i}.gltf`);
+            commonFileNames.push(`part${i}.obj`);
+            commonFileNames.push(`part${i}.stl`);
+          }
 
           const models: ModelFile[] = [];
 
-          for (const fileName of commonFileNames) {
-            if (fileName.endsWith(".json")) continue;
+          const checkPromises = commonFileNames.map(async (fileName) => {
+            if (fileName.endsWith(".json")) return;
 
             const fileUrl = `${folderUrl}/${fileName}`;
 
@@ -185,9 +186,11 @@ export default function ProjectDetailPage() {
                 });
               }
             } catch (err) {
-              continue;
+              return;
             }
-          }
+          });
+
+          await Promise.all(checkPromises);
 
           if (models.length > 0) {
             setAvailableFiles(models);
