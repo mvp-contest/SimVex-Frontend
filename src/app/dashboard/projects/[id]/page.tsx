@@ -13,7 +13,17 @@ import {
 } from "@/lib/api";
 import { useAuth } from "@/app/context/AuthContext";
 import { useSocket } from "@/hooks/useSocket";
-import { Maximize2, Bot, Upload, X, Send, MessageCircle } from "lucide-react";
+import {
+  Maximize2,
+  Bot,
+  Upload,
+  X,
+  Send,
+  MessageCircle,
+  Plus,
+  Trash2,
+  Box,
+} from "lucide-react";
 import dynamic from "next/dynamic";
 import FileUpload from "@/app/components/FileUpload";
 import Button from "@/components/ui/Button";
@@ -64,18 +74,24 @@ export default function ProjectDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [projectName, setProjectName] = useState("");
-  const [, setMemos] = useState<Memo[]>([]);
+
+  const [memoList, setMemoList] = useState<Memo[]>([]);
   const [currentMemo, setCurrentMemo] = useState<Memo | null>(null);
-  const [notes, setNotes] = useState("");
+  const [editingMemoId, setEditingMemoId] = useState<string | null>(null);
+  const [editingMemoContent, setEditingMemoContent] = useState("");
   const [savingMemo, setSavingMemo] = useState(false);
+  const [showMemoModal, setShowMemoModal] = useState(false);
 
   const [metaData, setMetaData] = useState<MetaDataJson>({});
   const [availableFiles, setAvailableFiles] = useState<ModelFile[]>([]);
   const [spawnedModels, setSpawnedModels] = useState<ModelFile[]>([]);
   const [showUpload, setShowUpload] = useState(true);
-  const [selectedPartName, setSelectedPartName] = useState<string | null>(null);
+  const [selectedPart, setSelectedPart] = useState<ModelFile | null>(null);
 
-  // AI Assistant state
+  const [rightTab, setRightTab] = useState<"parts" | "info" | "memos">("parts");
+  const [notes, setNotes] = useState("");
+  const [selectedPartName, setSelectedPartName] = useState("");
+
   const [aiQuestions, setAiQuestions] = useState<AIQuestion[]>([]);
   const [showAiAssistant, setShowAiAssistant] = useState(false);
   const aiEndRef = useRef<HTMLDivElement>(null);
@@ -245,14 +261,10 @@ export default function ProjectDetailPage() {
   const loadMemos = async () => {
     try {
       const data = await memosApi.listByProject(projectId);
-      setMemos(data);
-      if (data.length > 0) {
-        setCurrentMemo(data[0]);
-        setNotes(data[0].content);
-      }
+      setMemoList(data);
     } catch (err) {
       console.error("Failed to load memos:", err);
-      setMemos([]);
+      setMemoList([]);
     }
   };
 
@@ -411,24 +423,48 @@ export default function ProjectDetailPage() {
     }
   };
 
+  const handleCreateMemo = () => {
+    setEditingMemoId(null);
+    setEditingMemoContent("");
+    setShowMemoModal(true);
+  };
+
+  const handleEditMemo = (memo: Memo) => {
+    setEditingMemoId(memo.id);
+    setEditingMemoContent(memo.content);
+    setShowMemoModal(true);
+  };
+
   const handleSaveMemo = async () => {
-    if (!notes.trim() || !user) return;
+    if (!editingMemoContent.trim() || !user) return;
     try {
       setSavingMemo(true);
       const author = user.nickname || user.email || "Anonymous";
-      if (currentMemo) {
-        await memosApi.update(currentMemo.id, notes);
+      if (editingMemoId) {
+        await memosApi.update(editingMemoId, editingMemoContent);
       } else {
-        const newMemo = await memosApi.create(projectId, notes, author);
-        setCurrentMemo(newMemo);
+        await memosApi.create(projectId, editingMemoContent, author);
       }
       await loadMemos();
-      alert("Memo saved successfully!");
+      setShowMemoModal(false);
+      setEditingMemoContent("");
+      setEditingMemoId(null);
     } catch (err) {
       console.error("Failed to save memo:", err);
       alert(err instanceof Error ? err.message : "Failed to save memo");
     } finally {
       setSavingMemo(false);
+    }
+  };
+
+  const handleDeleteMemo = async (memoId: string) => {
+    if (!confirm("Are you sure you want to delete this memo?")) return;
+    try {
+      await memosApi.remove(memoId);
+      await loadMemos();
+    } catch (err) {
+      console.error("Failed to delete memo:", err);
+      alert(err instanceof Error ? err.message : "Failed to delete memo");
     }
   };
 
@@ -704,85 +740,245 @@ export default function ProjectDetailPage() {
         </div>
 
         {/* Right Sidebar */}
-        <div className="w-[340px] flex flex-col border-l border-(--color-border-primary) bg-(--color-sidebar-bg) overflow-hidden">
-          {/* Available Parts */}
-          <div className="border-b border-(--color-border-primary) flex-shrink-0">
-            <div className="p-4">
-              <h3 className="text-(--color-text-primary) font-semibold text-sm mb-3">
-                Available Parts ({availableFiles.length})
-              </h3>
-              <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
-                {availableFiles.map((file, index) => (
-                  <div
-                    key={file.id}
-                    className="p-3 rounded-lg bg-(--color-card-bg) border border-(--color-border-primary) hover:border-(--color-accent-blue) transition-colors"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-(--color-text-light) text-sm font-medium truncate">
-                          {file.displayName}
-                        </h4>
-                        {file.description && (
-                          <p className="text-(--color-text-muted) text-xs mt-1 line-clamp-2">
-                            {file.description}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleSpawnModel(index)}
-                        className="flex-1 px-2 py-1 text-xs bg-(--color-input-bg) hover:bg-(--color-accent-blue) hover:text-white rounded transition-colors"
-                      >
-                        Spawn
-                      </button>
-                      <button
-                        onClick={() =>
-                          askAIAboutPart(
-                            file.name,
-                            `${file.displayName || file.name}에 대해 자세히 설명해주세요.`,
-                          )
-                        }
-                        className="flex items-center gap-1 px-2 py-1 text-xs bg-(--color-input-bg) hover:bg-(--color-accent-blue) hover:text-white rounded transition-colors"
-                      >
-                        <Bot size={12} />
-                        Ask AI
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+        <div className="w-[340px] flex flex-col border-l border-(--color-border-primary) bg-(--color-sidebar-bg)">
+          {/* Tabs */}
+          <div className="flex border-b border-(--color-border-primary) bg-(--color-header-bg)">
+            <button
+              onClick={() => setRightTab("parts")}
+              className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+                rightTab === "parts"
+                  ? "text-(--color-text-primary) border-b-2 border-(--color-accent-blue)"
+                  : "text-(--color-text-muted) hover:text-(--color-text-secondary)"
+              }`}
+            >
+              Parts
+            </button>
+            <button
+              onClick={() => setRightTab("info")}
+              className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+                rightTab === "info"
+                  ? "text-(--color-text-primary) border-b-2 border-(--color-accent-blue)"
+                  : "text-(--color-text-muted) hover:text-(--color-text-secondary)"
+              }`}
+            >
+              Info
+            </button>
+            <button
+              onClick={() => setRightTab("memos")}
+              className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+                rightTab === "memos"
+                  ? "text-(--color-text-primary) border-b-2 border-(--color-accent-blue)"
+                  : "text-(--color-text-muted) hover:text-(--color-text-secondary)"
+              }`}
+            >
+              Memos
+            </button>
           </div>
 
-          {/* Project Notes */}
-          <div className="flex-1 flex flex-col border-b border-(--color-border-primary) min-h-0 overflow-hidden">
-            <div className="p-4 flex-shrink-0">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-(--color-text-primary) font-semibold text-sm">
-                  Project Notes
+          {/* Tab Content */}
+          <div className="flex-1 overflow-hidden flex flex-col">
+            {rightTab === "parts" && (
+              <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                <h3 className="text-(--color-text-primary) font-semibold text-sm mb-3">
+                  Available Parts ({availableFiles.length})
                 </h3>
-                <Button
-                  onClick={handleSaveMemo}
-                  disabled={savingMemo}
-                  size="sm"
-                  className="h-7 text-xs"
-                >
-                  {savingMemo ? "Saving..." : "Save"}
-                </Button>
+                <div className="space-y-2">
+                  {availableFiles.map((file, index) => (
+                    <div
+                      key={file.id}
+                      className="p-3 rounded-lg bg-(--color-card-bg) border border-(--color-border-primary) hover:border-(--color-accent-blue) transition-colors"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-(--color-text-light) text-sm font-medium truncate">
+                            {file.displayName}
+                          </h4>
+                          {file.description && (
+                            <p className="text-(--color-text-muted) text-xs mt-1 line-clamp-2">
+                              {file.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleSpawnModel(index)}
+                          className="flex-1 px-2 py-1 text-xs bg-(--color-input-bg) hover:bg-(--color-accent-blue) hover:text-white rounded transition-colors"
+                        >
+                          Spawn
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedPart(file);
+                            setRightTab("info");
+                          }}
+                          className="flex items-center gap-1 px-2 py-1 text-xs bg-(--color-input-bg) hover:bg-(--color-accent-blue) hover:text-white rounded transition-colors"
+                        >
+                          <Bot size={12} />
+                          Info
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-            <div className="flex-1 px-4 pb-4 overflow-hidden">
-              <TextArea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Add project notes here..."
-                className="h-full resize-none text-sm"
-              />
-            </div>
+            )}
+
+            {rightTab === "info" && (
+              <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                {selectedPart ? (
+                  <div>
+                    <h3 className="text-(--color-text-primary) font-semibold text-lg mb-2">
+                      {selectedPart.displayName || selectedPart.name}
+                    </h3>
+                    {selectedPart.description && (
+                      <p className="text-(--color-text-secondary) text-sm mb-4 leading-relaxed">
+                        {selectedPart.description}
+                      </p>
+                    )}
+                    <div className="mt-4 p-3 bg-(--color-input-bg) rounded-lg border border-(--color-border-primary)">
+                      <p className="text-xs text-(--color-text-muted) mb-1">
+                        File Name:
+                      </p>
+                      <p className="text-sm text-(--color-text-primary) font-mono">
+                        {selectedPart.name}
+                      </p>
+                    </div>
+                    <div className="mt-3 p-3 bg-(--color-input-bg) rounded-lg border border-(--color-border-primary)">
+                      <p className="text-xs text-(--color-text-muted) mb-1">
+                        File Type:
+                      </p>
+                      <p className="text-sm text-(--color-text-primary) uppercase">
+                        {selectedPart.type}
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() =>
+                        askAIAboutPart(
+                          selectedPart.displayName || selectedPart.name,
+                          `${selectedPart.displayName || selectedPart.name}에 대해 자세히 설명해주세요.`,
+                        )
+                      }
+                      className="w-full mt-4"
+                      size="sm"
+                    >
+                      <Bot size={16} className="mr-2" />
+                      Ask AI about this part
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-(--color-text-muted)">
+                    <Box size={48} className="mb-4 opacity-50" />
+                    <p className="text-sm">Select a part to view details</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {rightTab === "memos" && (
+              <div className="flex-1 overflow-hidden flex flex-col">
+                <div className="p-4 border-b border-(--color-border-primary)">
+                  <Button
+                    onClick={handleCreateMemo}
+                    size="sm"
+                    className="w-full"
+                  >
+                    <Plus size={16} className="mr-2" />
+                    New Memo
+                  </Button>
+                </div>
+                <div className="flex-1 overflow-x-auto overflow-y-hidden p-4">
+                  <div
+                    className="flex gap-4 pb-2"
+                    style={{ minWidth: "min-content" }}
+                  >
+                    {memoList.map((memo) => (
+                      <div
+                        key={memo.id}
+                        onClick={() => handleEditMemo(memo)}
+                        className="relative flex-shrink-0 w-48 h-48 bg-yellow-100 dark:bg-yellow-900/20 p-4 rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow border-l-4 border-yellow-400"
+                        style={{
+                          transform: "rotate(-1deg)",
+                        }}
+                      >
+                        <p className="text-sm text-gray-800 dark:text-gray-200 line-clamp-6 whitespace-pre-wrap break-words">
+                          {memo.content}
+                        </p>
+                        <div className="absolute bottom-2 right-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteMemo(memo.id);
+                            }}
+                            className="text-red-500 hover:text-red-700 p-1"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {memoList.length === 0 && (
+                      <div className="w-full flex items-center justify-center text-(--color-text-muted) text-sm">
+                        No memos yet. Click "New Memo" to create one.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Memo Modal */}
+      {showMemoModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-(--color-card-bg) border-2 border-(--color-border-primary) rounded-xl w-full max-w-2xl shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-(--color-border-primary)">
+              <h2 className="text-xl font-bold text-(--color-text-primary)">
+                {editingMemoId ? "Edit Memo" : "New Memo"}
+              </h2>
+              <button
+                onClick={() => {
+                  setShowMemoModal(false);
+                  setEditingMemoContent("");
+                  setEditingMemoId(null);
+                }}
+                className="text-(--color-text-muted) hover:text-(--color-text-primary)"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <div className="p-6">
+              <TextArea
+                value={editingMemoContent}
+                onChange={(e) => setEditingMemoContent(e.target.value)}
+                placeholder="Write your memo here..."
+                className="min-h-[300px] text-sm"
+                autoFocus
+              />
+            </div>
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-(--color-border-primary)">
+              <Button
+                onClick={() => {
+                  setShowMemoModal(false);
+                  setEditingMemoContent("");
+                  setEditingMemoId(null);
+                }}
+                variant="secondary"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSaveMemo}
+                disabled={savingMemo || !editingMemoContent.trim()}
+              >
+                {savingMemo ? "Saving..." : "Save Memo"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Bottom: AI Assistant */}
       {showAiAssistant && (
