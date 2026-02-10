@@ -42,7 +42,6 @@ export default function ProjectDetailPage() {
     const [notes, setNotes] = useState("");
     const [savingMemo, setSavingMemo] = useState(false);
 
-    // 3D Model state
     interface ModelFile {
         id: string;
         name: string;
@@ -56,15 +55,11 @@ export default function ProjectDetailPage() {
     const [partDescription, setPartDescription] = useState<string>("");
     const [loadingPartDescription, setLoadingPartDescription] = useState(false);
 
-    // Collision detection callback (data from ThreeViewer)
     const handleCollisionData = useCallback(
-        (data: { count: number; collidingIds: Set<string> }) => {
-            // Can be used for external UI or logging if needed
-        },
+        (data: { count: number; collidingIds: Set<string> }) => {},
         [],
     );
 
-    // Project Chat state
     const [chat, setChat] = useState<Chat | null>(null);
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
     const [newChatMessage, setNewChatMessage] = useState("");
@@ -73,7 +68,6 @@ export default function ProjectDetailPage() {
     const chatEndRef = useRef<HTMLDivElement>(null);
     const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // WebSocket event handlers
     const handleNewMessage = useCallback((message: ChatMessage) => {
         setChatMessages((prev) => {
             if (prev.some((m) => m.id === message.id)) return prev;
@@ -113,7 +107,6 @@ export default function ProjectDetailPage() {
         [user?.id],
     );
 
-    // Socket connection
     const { connected, sendMessage, sendTyping } = useSocket({
         chatId: chat?.id ?? null,
         onNewMessage: handleNewMessage,
@@ -122,7 +115,6 @@ export default function ProjectDetailPage() {
         onUserTyping: handleUserTyping,
     });
 
-    // Auto-scroll chat to bottom
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [chatMessages]);
@@ -130,14 +122,12 @@ export default function ProjectDetailPage() {
     useEffect(() => {
         loadProject();
         loadMemos();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [projectId]);
 
     useEffect(() => {
         if (project?.teamId) {
             loadOrCreateChat();
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [project?.teamId]);
 
     const loadProject = async () => {
@@ -148,7 +138,6 @@ export default function ProjectDetailPage() {
             setProject(data);
             setProjectName(data.name);
 
-            // Load project files from server
             try {
                 const projectFiles = await projectsApi.getFiles(projectId);
                 if (
@@ -247,29 +236,23 @@ export default function ProjectDetailPage() {
             setLoadingPartDescription(true);
             setPartDescription("");
 
-            // Remove file extension from part name (e.g., "part.glb" -> "part")
             const nodeName = selectedPartName.replace(/\.(glb|gltf|obj|stl)$/i, "");
 
-            // Ask AI for description (AI server will fetch metadata from R2 CDN)
             const aiResponse = await projectsApi.askNodeQuestion(
                 projectId,
                 nodeName,
                 `${nodeName} 부품에 대해 자세히 설명해주세요. 이 부품의 기능, 특징, 용도 등을 포함해서 설명해주세요.`,
             );
 
-            // Handle different response formats
             let description = "";
 
-            // Check for error responses first
             if (aiResponse.detail) {
-                // This is an error response
                 if (aiResponse.detail.includes("Metadata not found")) {
                     throw new Error("Metadata not found for project");
                 }
                 throw new Error(aiResponse.detail);
             }
 
-            // Handle success responses
             if (typeof aiResponse === "string") {
                 description = aiResponse;
             } else if (aiResponse.answer) {
@@ -287,14 +270,12 @@ export default function ProjectDetailPage() {
             console.error("Failed to get part description:", err);
             const errorMessage = err instanceof Error ? err.message : String(err);
 
-            // Handle metadata not found error - provide analysis based on part name
             if (
                 errorMessage.includes("Metadata not found") ||
                 errorMessage.includes("Project or folder not found")
             ) {
                 const nodeName = selectedPartName.replace(/\.(glb|gltf|obj|stl)$/i, "");
 
-                // Analyze part name and provide intelligent description
                 let analysis = `🔍 부품 이름 분석: ${nodeName}\n\n`;
 
                 const lowerName = nodeName.toLowerCase();
@@ -368,7 +349,6 @@ export default function ProjectDetailPage() {
     const handleSendChatMessage = () => {
         if (!newChatMessage.trim() || !chat || !user?.id) return;
 
-        // Create optimistic message for immediate display
         const optimisticMessage: ChatMessage = {
             id: `temp-${Date.now()}`,
             chatId: chat.id,
@@ -386,16 +366,13 @@ export default function ProjectDetailPage() {
             },
         };
 
-        // Add message immediately to UI
         setChatMessages((prev) => [...prev, optimisticMessage]);
 
         if (connected) {
             sendMessage(user.id, newChatMessage);
             setNewChatMessage("");
-            // Stop typing indicator
             sendTyping(user.id, false);
         } else {
-            // Fallback to REST if WebSocket is disconnected
             chatsApi
                 .sendMessage(chat.id, user.id, newChatMessage)
                 .then(() => {
@@ -404,7 +381,6 @@ export default function ProjectDetailPage() {
                 })
                 .catch((err) => {
                     console.error("Failed to send message:", err);
-                    // Remove optimistic message on error
                     setChatMessages((prev) => prev.filter((m) => m.id !== optimisticMessage.id));
                 });
         }
@@ -414,14 +390,12 @@ export default function ProjectDetailPage() {
         setNewChatMessage(e.target.value);
         if (!user?.id) return;
 
-        // Send typing indicator
         sendTyping(user.id, true);
 
-        // Clear previous timeout
         if (typingTimeoutRef.current) {
             clearTimeout(typingTimeoutRef.current);
         }
-        // Stop typing after 2 seconds of inactivity
+
         typingTimeoutRef.current = setTimeout(() => {
             sendTyping(user.id, false);
         }, 2000);
