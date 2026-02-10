@@ -7,12 +7,14 @@ async function request<T>(
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-  console.log("API Request:", {
-    url: `${API_BASE}${path}`,
-    method: options?.method || "GET",
-    body: options?.body,
-    hasToken: !!token
-  });
+  if (process.env.NODE_ENV === 'development') {
+    console.log("API Request:", {
+      url: `${API_BASE}${path}`,
+      method: options?.method || "GET",
+      body: options?.body,
+      hasToken: !!token,
+    });
+  }
 
   try {
     const res = await fetch(`${API_BASE}${path}`, {
@@ -35,15 +37,17 @@ async function request<T>(
         body = { rawError: text };
       }
       
-      console.error("API Error Details:", {
-        status: res.status,
-        statusText: res.statusText,
-        contentType,
-        body,
-        bodyString: JSON.stringify(body, null, 2),
-        url: `${API_BASE}${path}`,
-        requestBody: options?.body
-      });
+      if (process.env.NODE_ENV === 'development') {
+        console.error("API Error Details:", {
+          status: res.status,
+          statusText: res.statusText,
+          contentType,
+          body,
+          bodyString: JSON.stringify(body, null, 2),
+          url: `${API_BASE}${path}`,
+          requestBody: options?.body,
+        });
+      }
       
       const errorMessage = body.message || body.error || body.rawError || `API error ${res.status}: ${res.statusText}`;
       throw new Error(errorMessage);
@@ -54,11 +58,13 @@ async function request<T>(
   } catch (error) {
     // Network error or fetch failure
     if (error instanceof TypeError && error.message.includes('fetch')) {
-      console.error("Network Error:", {
-        url: `${API_BASE}${path}`,
-        error: error.message,
-        suggestion: "백엔드 서버가 실행 중인지 확인하거나 네트워크 연결을 확인하세요."
-      });
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Network Error:", {
+          url: `${API_BASE}${path}`,
+          error: error.message,
+          suggestion: "백엔드 서버가 실행 중인지 확인하거나 네트워크 연결을 확인하세요."
+        });
+      }
       throw new Error(`네트워크 연결 실패: ${API_BASE}${path}`);
     }
     throw error;

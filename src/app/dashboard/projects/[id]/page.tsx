@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useParams } from "next/navigation";
-import { projects as projectsApi, memos as memosApi, chats as chatsApi, ai as aiApi, type Project, type Memo, type Chat, type ChatMessage } from "@/lib/api";
+import { projects as projectsApi, memos as memosApi, chats as chatsApi, type Project, type Memo, type Chat, type ChatMessage } from "@/lib/api";
 import { useAuth } from "@/app/context/AuthContext";
 import { useSocket } from "@/hooks/useSocket";
 import { Maximize2, Bot, Upload, X, Send } from "lucide-react";
@@ -44,7 +44,6 @@ export default function ProjectDetailPage() {
   const [modelFiles, setModelFiles] = useState<ModelFile[]>([]);
   const [currentModelIndex, setCurrentModelIndex] = useState<number>(0);
   const [showUpload, setShowUpload] = useState(true);
-  const [selectedNodeName, setSelectedNodeName] = useState<string>("default");
   const [selectedPartName, setSelectedPartName] = useState<string | null>(null);
   const [partDescription, setPartDescription] = useState<string>("");
   const [loadingPartDescription, setLoadingPartDescription] = useState(false);
@@ -52,7 +51,6 @@ export default function ProjectDetailPage() {
   // Collision detection callback (data from ThreeViewer)
   const handleCollisionData = useCallback((data: { count: number; collidingIds: Set<string> }) => {
     // Can be used for external UI or logging if needed
-    console.log('Collision data:', data.count, 'collisions');
   }, []);
 
 
@@ -152,7 +150,7 @@ export default function ProjectDetailPage() {
           setModelFiles(serverModels);
         }
       } catch (fileErr) {
-        console.log("No files found for this project or failed to load files");
+        // No files found for this project
       }
 
       await projectsApi.updateLastAccessed(projectId);
@@ -228,15 +226,12 @@ export default function ProjectDetailPage() {
       // Remove file extension from part name (e.g., "part.glb" -> "part")
       const nodeName = selectedPartName.replace(/\.(glb|gltf|obj|stl)$/i, '');
       
-      console.log("Fetching AI description for:", nodeName, "(original:", selectedPartName, ") in project:", projectId);
-      
       // Ask AI for description (AI server will fetch metadata from R2 CDN)
       const aiResponse = await projectsApi.askNodeQuestion(
         projectId,
         nodeName,
         `${nodeName} 부품에 대해 자세히 설명해주세요. 이 부품의 기능, 특징, 용도 등을 포함해서 설명해주세요.`
       );
-      console.log("AI response received:", aiResponse);
       
       // Handle different response formats
       let description = "";

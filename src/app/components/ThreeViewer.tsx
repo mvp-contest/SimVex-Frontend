@@ -335,7 +335,6 @@ export default function ThreeViewer({ models, onCollisionData, onPartSelect }: T
             isSelected={selectedModel === model.id}
             isColliding={collisionEnabled && collidingIds.has(model.id)}
             onClick={() => {
-              console.log('Model clicked:', model.id, 'name:', model.name);
               setSelectedModel(model.id);
               onPartSelect?.(model.name);
             }}
