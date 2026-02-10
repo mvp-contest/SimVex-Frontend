@@ -161,6 +161,7 @@ export default function ProjectDetailPage() {
                             };
                         });
                     setAvailableFiles(serverModels);
+                    setShowUpload(false);
                 }
             } catch (fileErr) {
                 console.error("Failed to load files:", fileErr);
